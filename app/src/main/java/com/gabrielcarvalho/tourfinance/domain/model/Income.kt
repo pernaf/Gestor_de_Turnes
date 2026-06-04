@@ -1,0 +1,21 @@
+package com.gabrielcarvalho.tourfinance.domain.model
+
+import java.time.LocalDate
+
+data class Income(
+    val id: Long = 0,
+    val tourId: Long,
+    val description: String,
+    val amount: Double,
+    val date: LocalDate,
+    val type: IncomeType,
+    val city: String = ""
+)
+
+enum class IncomeType(val label: String) {
+    SHOW("Cachê de Show"),
+    MERCHANDISE("Merch"),
+    STREAMING("Streaming"),
+    SPONSORSHIP("Patrocínio"),
+    OTHER("Outro")
+}

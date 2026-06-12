@@ -2,6 +2,8 @@ package com.gabrielcarvalho.tourfinance.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.gabrielcarvalho.tourfinance.data.local.AppDatabase
 import com.gabrielcarvalho.tourfinance.data.local.dao.BandDao
 import com.gabrielcarvalho.tourfinance.data.local.dao.ExpenseDao
@@ -22,6 +24,14 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+private val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE expenses ADD COLUMN city TEXT NOT NULL DEFAULT ''"
+        )
+    }
+}
+
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
@@ -34,7 +44,7 @@ object AppModule {
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME
         )
-            .fallbackToDestructiveMigration()
+            .addMigrations(MIGRATION_3_4)
             .build()
 
     @Provides
@@ -64,5 +74,4 @@ object AppModule {
     @Provides
     @Singleton
     fun provideBandRepository(impl: BandRepositoryImpl): BandRepository = impl
-
 }

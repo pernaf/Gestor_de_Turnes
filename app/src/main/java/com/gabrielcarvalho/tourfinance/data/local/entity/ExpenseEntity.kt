@@ -22,5 +22,6 @@ data class ExpenseEntity(
     val amount: Double,
     val category: String,
     val date: String,
-    val notes: String
+    val notes: String,
+    val city: String = ""
 )

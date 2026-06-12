@@ -222,8 +222,9 @@ fun TourDetailScreen(
                                 emoji = expense.category.emoji,
                                 title = expense.description,
                                 subtitle = buildString {
-                                    append("${expense.category.label} • ${expense.date.format(
-                                        DateTimeFormatter.ofPattern("dd/MM/yyyy"))}")
+                                    append(expense.category.label)
+                                    if (expense.city.isNotBlank()) append(" • ${expense.city}")
+                                    append(" • ${expense.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}")
                                     if (expense.notes.isNotBlank()) append(" • ${expense.notes}")
                                 },
                                 amount = expense.amount,

@@ -33,7 +33,9 @@ class ExpenseRepositoryImpl @Inject constructor(
         amount = amount,
         category = ExpenseCategory.valueOf(category),
         date = LocalDate.parse(date),
-        notes = notes
+        notes = notes,
+        city = city
+
     )
 
     private fun Expense.toEntity() = ExpenseEntity(
@@ -43,6 +45,7 @@ class ExpenseRepositoryImpl @Inject constructor(
         amount = amount,
         category = category.name,
         date = date.toString(),
-        notes = notes
+        notes = notes,
+        city = city
     )
 }

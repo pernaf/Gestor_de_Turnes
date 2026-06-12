@@ -55,6 +55,7 @@ fun AddExpenseScreen(
     var descError by remember { mutableStateOf(false) }
     var amountError by remember { mutableStateOf(false) }
     var fieldsLoaded by remember { mutableStateOf(false) }
+    var city by remember { mutableStateOf("") }
 
     // Carrega dados se for edição
     LaunchedEffect(expenseId) {
@@ -70,6 +71,7 @@ fun AddExpenseScreen(
                 selectedCat = e.category
                 notes = e.notes
                 fieldsLoaded = true
+                city = e.city
             }
         }
     }
@@ -125,6 +127,15 @@ fun AddExpenseScreen(
                 singleLine = true
             )
 
+            OutlinedTextField(
+                value = city,
+                onValueChange = { city = it },
+                label = { Text("Cidade (opcional)") },
+                placeholder = { Text("Ex: São Paulo") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
             Text(
                 text = "Categoria",
                 style = MaterialTheme.typography.titleSmall
@@ -161,7 +172,8 @@ fun AddExpenseScreen(
                             description = description.trim(),
                             amount = amount!!,
                             category = selectedCat,
-                            notes = notes.trim()
+                            notes = notes.trim(),
+                            city = city.trim()
                         )
                         onNavigateBack()
                     }

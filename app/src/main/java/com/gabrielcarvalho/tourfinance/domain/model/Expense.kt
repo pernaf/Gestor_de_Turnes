@@ -9,7 +9,8 @@ data class Expense(
     val amount: Double,
     val category: ExpenseCategory,
     val date: LocalDate,
-    val notes: String = ""
+    val notes: String = "",
+    val city: String = ""
 )
 
 enum class ExpenseCategory(val label: String, val emoji: String) {

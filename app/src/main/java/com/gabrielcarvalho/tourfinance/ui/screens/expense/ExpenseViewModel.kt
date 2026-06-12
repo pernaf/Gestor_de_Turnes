@@ -35,7 +35,8 @@ class ExpenseViewModel @Inject constructor(
         description: String,
         amount: Double,
         category: ExpenseCategory,
-        notes: String
+        notes: String,
+        city: String
     ) {
         viewModelScope.launch {
             repository.insertExpense(
@@ -46,7 +47,8 @@ class ExpenseViewModel @Inject constructor(
                     amount = amount,
                     category = category,
                     date = LocalDate.now(),
-                    notes = notes
+                    notes = notes,
+                    city = city
                 )
             )
         }

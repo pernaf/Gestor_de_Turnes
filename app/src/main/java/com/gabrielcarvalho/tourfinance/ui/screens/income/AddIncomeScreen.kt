@@ -126,6 +126,7 @@ fun AddIncomeScreen(
                 value = city,
                 onValueChange = { city = it },
                 label = { Text("Cidade (opcional)") },
+                placeholder = { Text("Ex: São Paulo") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )

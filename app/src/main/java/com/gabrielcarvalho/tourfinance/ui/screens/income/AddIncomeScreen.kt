@@ -138,7 +138,7 @@ fun AddIncomeScreen(
                     FilterChip(
                         selected = selectedType == type,
                         onClick = { selectedType = type },
-                        label = { Text(type.label) }
+                        label = { Text("${type.emoji} ${type.label}") }
                     )
                 }
             }

@@ -12,10 +12,9 @@ data class Income(
     val city: String = ""
 )
 
-enum class IncomeType(val label: String) {
-    SHOW("Cachê de Show"),
-    MERCHANDISE("Merch"),
-    STREAMING("Streaming"),
-    SPONSORSHIP("Patrocínio"),
-    OTHER("Outro")
+enum class IncomeType(val label: String, val emoji: String) {
+    SHOW("Cachê de show", "🎤"),
+    MERCH("Merch", "🛍️"),
+    STREAMING("Streaming", "🎧"),
+    SPONSORSHIP("Patrocínio", "🤝")
 }

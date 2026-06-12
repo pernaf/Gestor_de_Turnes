@@ -46,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gabrielcarvalho.tourfinance.ui.components.FinanceCard
 import com.gabrielcarvalho.tourfinance.ui.components.SwipeToDeleteItem
 import com.gabrielcarvalho.tourfinance.ui.components.TransactionItem
+import java.time.format.DateTimeFormatter
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -192,7 +193,7 @@ fun TourDetailScreen(
                                 subtitle = buildString {
                                     append(income.type.label)
                                     if (income.city.isNotBlank()) append(" • ${income.city}")
-                                    append(" • ${income.date}")
+                                    append(" • ${income.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}")
                                 },
                                 amount = income.amount,
                                 isExpense = false,
@@ -221,7 +222,8 @@ fun TourDetailScreen(
                                 emoji = expense.category.emoji,
                                 title = expense.description,
                                 subtitle = buildString {
-                                    append("${expense.category.label} • ${expense.date}")
+                                    append("${expense.category.label} • ${expense.date.format(
+                                        DateTimeFormatter.ofPattern("dd/MM/yyyy"))}")
                                     if (expense.notes.isNotBlank()) append(" • ${expense.notes}")
                                 },
                                 amount = expense.amount,
@@ -259,8 +261,8 @@ fun TourDetailScreen(
                 item {
                     HorizontalDivider()
                     Text(
-                        text = "Início: ${uiState.tour?.startDate}" +
-                                (uiState.tour?.endDate?.let { " • Encerrada: $it" } ?: ""),
+                        text = "Início: ${uiState.tour?.startDate?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}" +
+                                (uiState.tour?.endDate?.let { " • Encerrada: ${it.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}" } ?: ""),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp)

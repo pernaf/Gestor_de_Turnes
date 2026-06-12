@@ -44,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gabrielcarvalho.tourfinance.domain.model.Tour
 import com.gabrielcarvalho.tourfinance.domain.model.TourStatus
 import com.gabrielcarvalho.tourfinance.ui.components.EmptyState
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -140,8 +141,8 @@ fun TourListScreen(
                                         style = MaterialTheme.typography.titleMedium
                                     )
                                     Text(
-                                        text = "Início: ${tour.startDate}" +
-                                                (tour.endDate?.let { " • Fim: $it" } ?: ""),
+                                        text = "Início: ${tour.startDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}" +
+                                                (tour.endDate?.let { " • Fim: ${it.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}" } ?: ""),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )

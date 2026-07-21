@@ -18,12 +18,14 @@ sealed class Screen(val route: String) {
         fun createRoute(tourId: Long) = "tour_detail/$tourId"
     }
 
-    object AddExpense : Screen("add_expense/{tourId}") {
-        fun createRoute(tourId: Long) = "add_expense/$tourId"
+    object AddExpense : Screen("add_expense/{tourId}?city={city}") {
+        fun createRoute(tourId: Long, city: String = "") =
+            "add_expense/$tourId?city=${Uri.encode(city)}"
     }
 
-    object AddIncome : Screen("add_income/{tourId}") {
-        fun createRoute(tourId: Long) = "add_income/$tourId"
+    object AddIncome : Screen("add_income/{tourId}?city={city}") {
+        fun createRoute(tourId: Long, city: String = "") =
+            "add_income/$tourId?city=${Uri.encode(city)}"
     }
 
     object EditExpense : Screen("edit_expense/{tourId}/{expenseId}") {
@@ -34,4 +36,8 @@ sealed class Screen(val route: String) {
         fun createRoute(tourId: Long, incomeId: Long) = "edit_income/$tourId/$incomeId"
     }
     object Splash : Screen("splash")
+
+    data object AddTourStop : Screen("add_tour_stop/{tourId}") {
+        fun createRoute(tourId: Long) = "add_tour_stop/$tourId"
+    }
 }

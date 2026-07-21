@@ -9,14 +9,17 @@ import com.gabrielcarvalho.tourfinance.data.local.dao.BandDao
 import com.gabrielcarvalho.tourfinance.data.local.dao.ExpenseDao
 import com.gabrielcarvalho.tourfinance.data.local.dao.IncomeDao
 import com.gabrielcarvalho.tourfinance.data.local.dao.TourDao
+import com.gabrielcarvalho.tourfinance.data.local.dao.TourStopDao
 import com.gabrielcarvalho.tourfinance.data.repository.BandRepositoryImpl
 import com.gabrielcarvalho.tourfinance.data.repository.ExpenseRepositoryImpl
 import com.gabrielcarvalho.tourfinance.data.repository.IncomeRepositoryImpl
 import com.gabrielcarvalho.tourfinance.data.repository.TourRepositoryImpl
+import com.gabrielcarvalho.tourfinance.data.repository.TourStopRepositoryImpl
 import com.gabrielcarvalho.tourfinance.domain.model.repository.BandRepository
 import com.gabrielcarvalho.tourfinance.domain.model.repository.ExpenseRepository
 import com.gabrielcarvalho.tourfinance.domain.model.repository.IncomeRepository
 import com.gabrielcarvalho.tourfinance.domain.model.repository.TourRepository
+import com.gabrielcarvalho.tourfinance.domain.model.repository.TourStopRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -28,6 +31,24 @@ private val MIGRATION_3_4 = object : Migration(3, 4) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(
             "ALTER TABLE expenses ADD COLUMN city TEXT NOT NULL DEFAULT ''"
+        )
+    }
+}
+
+private val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS tour_stops (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                tourId INTEGER NOT NULL,
+                cityName TEXT NOT NULL,
+                showDate TEXT NOT NULL,
+                FOREIGN KEY(tourId) REFERENCES tours(id) ON DELETE CASCADE
+            )
+        """.trimIndent())
+
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_tour_stops_tourId ON tour_stops(tourId)"
         )
     }
 }
@@ -44,7 +65,7 @@ object AppModule {
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME
         )
-            .addMigrations(MIGRATION_3_4)
+            .addMigrations(MIGRATION_3_4, MIGRATION_4_5)
             .build()
 
     @Provides
@@ -74,4 +95,14 @@ object AppModule {
     @Provides
     @Singleton
     fun provideBandRepository(impl: BandRepositoryImpl): BandRepository = impl
+
+    @Provides
+    fun provideTourStopDao(database: AppDatabase): TourStopDao {
+        return database.tourStopDao()
+    }
+
+    @Provides
+    fun provideTourStopRepository(dao: TourStopDao): TourStopRepository {
+        return TourStopRepositoryImpl(dao)
+    }
 }

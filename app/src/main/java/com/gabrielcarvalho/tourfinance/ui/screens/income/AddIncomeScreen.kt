@@ -27,7 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
@@ -41,27 +41,31 @@ import com.gabrielcarvalho.tourfinance.domain.model.IncomeType
 fun AddIncomeScreen(
     tourId: Long,
     incomeId: Long = 0L,
+    preselectedCity: String = "",
     onNavigateBack: () -> Unit,
     viewModel: IncomeViewModel = hiltViewModel()
 ) {
     val isEditing = incomeId != 0L
     val incomeToEdit by viewModel.incomeToEdit.collectAsStateWithLifecycle()
+    val savedSuccessfully by viewModel.savedSuccessfully.collectAsStateWithLifecycle()
 
-    var description by remember { mutableStateOf("") }
-    var amountText by remember { mutableStateOf("") }
-    var city by remember { mutableStateOf("") }
-    var selectedType by remember { mutableStateOf(IncomeType.SHOW) }
-    var descError by remember { mutableStateOf(false) }
-    var amountError by remember { mutableStateOf(false) }
-    var fieldsLoaded by remember { mutableStateOf(false) }
+    var description by rememberSaveable { mutableStateOf("") }
+    var amountText by rememberSaveable { mutableStateOf("") }
+    var city by rememberSaveable { mutableStateOf(preselectedCity) }
+    var selectedType by rememberSaveable { mutableStateOf(IncomeType.SHOW) }
+    var descError by rememberSaveable { mutableStateOf(false) }
+    var amountError by rememberSaveable { mutableStateOf(false) }
+    var fieldsLoaded by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(incomeId) {
-        if (isEditing) viewModel.loadIncome(incomeId, tourId)
+        if (isEditing) {
+            viewModel.loadIncome(incomeId, tourId)
+        }
     }
 
     LaunchedEffect(incomeToEdit) {
         if (isEditing && !fieldsLoaded && incomeToEdit != null) {
-            incomeToEdit!!.let { i ->
+            incomeToEdit?.let { i ->
                 description = i.description
                 amountText = i.amount.toString()
                 city = i.city
@@ -71,13 +75,23 @@ fun AddIncomeScreen(
         }
     }
 
+    LaunchedEffect(savedSuccessfully) {
+        if (savedSuccessfully) {
+            viewModel.resetSaveState()
+            onNavigateBack()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(if (isEditing) "Editar Receita" else "Nova Receita") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Voltar"
+                        )
                     }
                 }
             )
@@ -102,7 +116,9 @@ fun AddIncomeScreen(
                 label = { Text("Descrição") },
                 placeholder = { Text("Ex: Show - Bar do Zé") },
                 isError = descError,
-                supportingText = { if (descError) Text("Informe a descrição") },
+                supportingText = {
+                    if (descError) Text("Informe a descrição")
+                },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -117,7 +133,9 @@ fun AddIncomeScreen(
                 placeholder = { Text("0,00") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 isError = amountError,
-                supportingText = { if (amountError) Text("Informe um valor válido") },
+                supportingText = {
+                    if (amountError) Text("Informe um valor válido")
+                },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -133,7 +151,10 @@ fun AddIncomeScreen(
 
             Text("Tipo de Receita")
 
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 IncomeType.entries.forEach { type ->
                     FilterChip(
                         selected = selectedType == type,
@@ -145,9 +166,14 @@ fun AddIncomeScreen(
 
             Button(
                 onClick = {
-                    val amount = amountText.replace(",", ".").toDoubleOrNull()
+                    val amount = amountText
+                        .replace(".", "")
+                        .replace(",", ".")
+                        .toDoubleOrNull()
+
                     descError = description.isBlank()
                     amountError = amount == null || amount <= 0
+
                     if (!descError && !amountError) {
                         viewModel.saveIncome(
                             tourId = tourId,
@@ -157,7 +183,6 @@ fun AddIncomeScreen(
                             type = selectedType,
                             city = city.trim()
                         )
-                        onNavigateBack()
                     }
                 },
                 modifier = Modifier

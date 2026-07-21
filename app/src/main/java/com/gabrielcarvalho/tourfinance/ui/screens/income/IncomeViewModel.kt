@@ -21,6 +21,9 @@ class IncomeViewModel @Inject constructor(
     private val _incomeToEdit = MutableStateFlow<Income?>(null)
     val incomeToEdit: StateFlow<Income?> = _incomeToEdit.asStateFlow()
 
+    private val _savedSuccessfully = MutableStateFlow(false)
+    val savedSuccessfully: StateFlow<Boolean> = _savedSuccessfully.asStateFlow()
+
     fun loadIncome(incomeId: Long, tourId: Long) {
         viewModelScope.launch {
             repository.getIncomesByTour(tourId).collect { list ->
@@ -38,17 +41,24 @@ class IncomeViewModel @Inject constructor(
         city: String
     ) {
         viewModelScope.launch {
+            _savedSuccessfully.value = false
+
+            val originalIncome = if (incomeId != 0L) _incomeToEdit.value else null
+            val dateToUse = originalIncome?.date ?: LocalDate.now()
+
             repository.insertIncome(
                 Income(
                     id = incomeId,
                     tourId = tourId,
                     description = description,
                     amount = amount,
-                    date = LocalDate.now(),
+                    date = dateToUse,
                     type = type,
                     city = city
                 )
             )
+
+            _savedSuccessfully.value = true
         }
     }
 
@@ -56,5 +66,9 @@ class IncomeViewModel @Inject constructor(
         viewModelScope.launch {
             repository.deleteIncome(income)
         }
+    }
+
+    fun resetSaveState() {
+        _savedSuccessfully.value = false
     }
 }

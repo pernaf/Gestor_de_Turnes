@@ -13,6 +13,7 @@ import com.gabrielcarvalho.tourfinance.ui.screens.splash.SplashScreen
 import com.gabrielcarvalho.tourfinance.ui.screens.tour.CreateTourScreen
 import com.gabrielcarvalho.tourfinance.ui.screens.tour.TourDetailScreen
 import com.gabrielcarvalho.tourfinance.ui.screens.tour.TourListScreen
+import com.gabrielcarvalho.tourfinance.ui.screens.tourstop.AddTourStopScreen
 
 @Composable
 fun AppNavHost(navController: NavHostController) {
@@ -83,8 +84,13 @@ fun AppNavHost(navController: NavHostController) {
             val tourId = backStack.arguments?.getLong("tourId") ?: return@composable
             TourDetailScreen(
                 tourId = tourId,
-                onAddExpense = { navController.navigate(Screen.AddExpense.createRoute(tourId)) },
-                onAddIncome = { navController.navigate(Screen.AddIncome.createRoute(tourId)) },
+                onAddExpense = { city ->
+                    navController.navigate(Screen.AddExpense.createRoute(tourId, city))
+                },
+                onAddIncome = { city ->
+                    navController.navigate(Screen.AddIncome.createRoute(tourId, city))
+                },
+                onAddTourStop = { navController.navigate(Screen.AddTourStop.createRoute(tourId)) },
                 onEditExpense = { expenseId ->
                     navController.navigate(Screen.EditExpense.createRoute(tourId, expenseId))
                 },
@@ -95,14 +101,35 @@ fun AppNavHost(navController: NavHostController) {
             )
         }
 
-        // Adicionar despesa
         composable(
-            route = Screen.AddExpense.route,
+            route = Screen.AddTourStop.route,
             arguments = listOf(navArgument("tourId") { type = NavType.LongType })
         ) { backStack ->
             val tourId = backStack.arguments?.getLong("tourId") ?: return@composable
+            AddTourStopScreen(
+                tourId = tourId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Adicionar despesa
+        composable(
+            route = Screen.AddExpense.route,
+            arguments = listOf(
+                navArgument("tourId") { type = NavType.LongType },
+                navArgument("city") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = true
+                }
+            )
+        ) { backStack ->
+            val tourId = backStack.arguments?.getLong("tourId") ?: return@composable
+            val city = backStack.arguments?.getString("city").orEmpty()
+
             AddExpenseScreen(
                 tourId = tourId,
+                preselectedCity = city,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -110,11 +137,21 @@ fun AppNavHost(navController: NavHostController) {
         // Adicionar receita
         composable(
             route = Screen.AddIncome.route,
-            arguments = listOf(navArgument("tourId") { type = NavType.LongType })
+            arguments = listOf(
+                navArgument("tourId") { type = NavType.LongType },
+                navArgument("city") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = true
+                }
+            )
         ) { backStack ->
             val tourId = backStack.arguments?.getLong("tourId") ?: return@composable
+            val city = backStack.arguments?.getString("city").orEmpty()
+
             AddIncomeScreen(
                 tourId = tourId,
+                preselectedCity = city,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

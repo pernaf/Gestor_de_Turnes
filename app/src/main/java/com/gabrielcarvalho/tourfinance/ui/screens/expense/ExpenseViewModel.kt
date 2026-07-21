@@ -21,6 +21,9 @@ class ExpenseViewModel @Inject constructor(
     private val _expenseToEdit = MutableStateFlow<Expense?>(null)
     val expenseToEdit: StateFlow<Expense?> = _expenseToEdit.asStateFlow()
 
+    private val _savedSuccessfully = MutableStateFlow(false)
+    val savedSuccessfully: StateFlow<Boolean> = _savedSuccessfully.asStateFlow()
+
     fun loadExpense(expenseId: Long, tourId: Long) {
         viewModelScope.launch {
             repository.getExpensesByTour(tourId).collect { list ->
@@ -31,7 +34,7 @@ class ExpenseViewModel @Inject constructor(
 
     fun saveExpense(
         tourId: Long,
-        expenseId: Long = 0,
+        expenseId: Long = 0L,
         description: String,
         amount: Double,
         category: ExpenseCategory,
@@ -39,6 +42,11 @@ class ExpenseViewModel @Inject constructor(
         city: String
     ) {
         viewModelScope.launch {
+            _savedSuccessfully.value = false
+
+            val originalExpense = if (expenseId != 0L) _expenseToEdit.value else null
+            val dateToUse = originalExpense?.date ?: LocalDate.now()
+
             repository.insertExpense(
                 Expense(
                     id = expenseId,
@@ -46,11 +54,13 @@ class ExpenseViewModel @Inject constructor(
                     description = description,
                     amount = amount,
                     category = category,
-                    date = LocalDate.now(),
+                    date = dateToUse,
                     notes = notes,
                     city = city
                 )
             )
+
+            _savedSuccessfully.value = true
         }
     }
 
@@ -58,5 +68,9 @@ class ExpenseViewModel @Inject constructor(
         viewModelScope.launch {
             repository.deleteExpense(expense)
         }
+    }
+
+    fun resetSaveState() {
+        _savedSuccessfully.value = false
     }
 }

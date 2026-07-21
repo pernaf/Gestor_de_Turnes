@@ -6,9 +6,11 @@ import com.gabrielcarvalho.tourfinance.domain.model.Expense
 import com.gabrielcarvalho.tourfinance.domain.model.Income
 import com.gabrielcarvalho.tourfinance.domain.model.Tour
 import com.gabrielcarvalho.tourfinance.domain.model.TourStatus
+import com.gabrielcarvalho.tourfinance.domain.model.TourStop
 import com.gabrielcarvalho.tourfinance.domain.model.repository.ExpenseRepository
 import com.gabrielcarvalho.tourfinance.domain.model.repository.IncomeRepository
 import com.gabrielcarvalho.tourfinance.domain.model.repository.TourRepository
+import com.gabrielcarvalho.tourfinance.domain.model.repository.TourStopRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,7 +32,8 @@ data class TourDetailUiState(
     val totalExpenses: Double = 0.0,
     val expenses: List<Expense> = emptyList(),
     val incomes: List<Income> = emptyList(),
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val tourStops: List<TourStop> = emptyList()
 ) {
     val balance: Double get() = totalIncome - totalExpenses
 }
@@ -39,7 +42,8 @@ data class TourDetailUiState(
 class TourViewModel @Inject constructor(
     private val tourRepository: TourRepository,
     private val expenseRepository: ExpenseRepository,
-    private val incomeRepository: IncomeRepository
+    private val incomeRepository: IncomeRepository,
+    private val tourStopRepository: TourStopRepository
 ) : ViewModel() {
 
     private val _listUiState = MutableStateFlow(TourListUiState())
@@ -49,6 +53,8 @@ class TourViewModel @Inject constructor(
     val detailUiState: StateFlow<TourDetailUiState> = _detailUiState.asStateFlow()
 
     fun loadTourDetail(tourId: Long) {
+        _detailUiState.update { it.copy(isLoading = true) }
+
         viewModelScope.launch {
             val tour = tourRepository.getTourById(tourId)
             _detailUiState.update { it.copy(tour = tour) }
@@ -59,14 +65,16 @@ class TourViewModel @Inject constructor(
                 incomeRepository.getTotalIncome(tourId),
                 expenseRepository.getTotalExpenses(tourId),
                 incomeRepository.getIncomesByTour(tourId),
-                expenseRepository.getExpensesByTour(tourId)
-            ) { totalIncome, totalExpenses, incomes, expenses ->
+                expenseRepository.getExpensesByTour(tourId),
+                tourStopRepository.getStopsByTour(tourId)
+            ) { totalIncome, totalExpenses, incomes, expenses, tourStops ->
                 _detailUiState.update {
                     it.copy(
                         totalIncome = totalIncome,
                         totalExpenses = totalExpenses,
                         incomes = incomes,
                         expenses = expenses,
+                        tourStops = tourStops,
                         isLoading = false
                     )
                 }

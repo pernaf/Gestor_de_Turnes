@@ -38,227 +38,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import java.text.Normalizer
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-
-private object BrazilCities {
-    // Aqui está uma amostra maior.
-    // Minha recomendação real: mover isso depois para um arquivo/object separado
-    // e substituir pela lista completa dos municípios do Brasil.
-    val all = listOf(
-        "Abaetetuba",
-        "Abreu e Lima",
-        "Açailândia",
-        "Acrelândia",
-        "Adamantina",
-        "Afonso Cláudio",
-        "Agrestina",
-        "Águas Lindas de Goiás",
-        "Alagoinhas",
-        "Alegre",
-        "Alfenas",
-        "Almirante Tamandaré",
-        "Altamira",
-        "Anápolis",
-        "Angra dos Reis",
-        "Ananindeua",
-        "Aparecida de Goiânia",
-        "Aquidauana",
-        "Arapiraca",
-        "Aracaju",
-        "Araguaína",
-        "Araguari",
-        "Araçatuba",
-        "Araraquara",
-        "Araripina",
-        "Araruama",
-        "Araxá",
-        "Atibaia",
-        "Bagé",
-        "Barbacena",
-        "Barcarena",
-        "Barreiras",
-        "Barretos",
-        "Belém",
-        "Belford Roxo",
-        "Belo Horizonte",
-        "Blumenau",
-        "Boa Vista",
-        "Botucatu",
-        "Bragança Paulista",
-        "Brasília",
-        "Cabo Frio",
-        "Cabo de Santo Agostinho",
-        "Cachoeiro de Itapemirim",
-        "Camaçari",
-        "Campina Grande",
-        "Campinas",
-        "Campo Grande",
-        "Campos dos Goytacazes",
-        "Canindé",
-        "Carapicuíba",
-        "Caruaru",
-        "Cascavel",
-        "Castanhal",
-        "Catalão",
-        "Catanduva",
-        "Caxias",
-        "Caxias do Sul",
-        "Chapecó",
-        "Colatina",
-        "Contagem",
-        "Corumbá",
-        "Criciúma",
-        "Cuiabá",
-        "Curitiba",
-        "Diadema",
-        "Divinópolis",
-        "Dourados",
-        "Duque de Caxias",
-        "Embu das Artes",
-        "Erechim",
-        "Eunápolis",
-        "Feira de Santana",
-        "Florianópolis",
-        "Formosa",
-        "Fortaleza",
-        "Foz do Iguaçu",
-        "Franca",
-        "Garanhuns",
-        "Goiânia",
-        "Governador Valadares",
-        "Gravataí",
-        "Guarapuava",
-        "Guarujá",
-        "Guarulhos",
-        "Ilhéus",
-        "Imperatriz",
-        "Indaiatuba",
-        "Ipatinga",
-        "Itabaiana",
-        "Itabira",
-        "Itaboraí",
-        "Itabuna",
-        "Itajaí",
-        "Itapecerica da Serra",
-        "Itapetininga",
-        "Itapevi",
-        "Itaquaquecetuba",
-        "Jaboatão dos Guararapes",
-        "Jacareí",
-        "Ji-Paraná",
-        "João Pessoa",
-        "Joinville",
-        "Juazeiro",
-        "Juazeiro do Norte",
-        "Juiz de Fora",
-        "Jundiaí",
-        "Lages",
-        "Lauro de Freitas",
-        "Limeira",
-        "Linhares",
-        "Londrina",
-        "Luziânia",
-        "Macaé",
-        "Macapá",
-        "Maceió",
-        "Manaus",
-        "Marabá",
-        "Maricá",
-        "Maringá",
-        "Mauá",
-        "Mogi das Cruzes",
-        "Montes Claros",
-        "Mossoró",
-        "Natal",
-        "Nilópolis",
-        "Niterói",
-        "Nova Friburgo",
-        "Nova Iguaçu",
-        "Novo Hamburgo",
-        "Olinda",
-        "Osasco",
-        "Ourinhos",
-        "Palhoça",
-        "Palmas",
-        "Parauapebas",
-        "Parintins",
-        "Parnamirim",
-        "Passo Fundo",
-        "Patos",
-        "Patos de Minas",
-        "Paulista",
-        "Pelotas",
-        "Petrolina",
-        "Petrópolis",
-        "Pindamonhangaba",
-        "Piracicaba",
-        "Ponta Grossa",
-        "Porto Alegre",
-        "Porto Seguro",
-        "Porto Velho",
-        "Poços de Caldas",
-        "Praia Grande",
-        "Presidente Prudente",
-        "Recife",
-        "Resende",
-        "Ribeirão Preto",
-        "Rio Branco",
-        "Rio Claro",
-        "Rio Verde",
-        "Rio das Ostras",
-        "Rio de Janeiro",
-        "Rondonópolis",
-        "Santarém",
-        "Santo André",
-        "Santo Ângelo",
-        "Santos",
-        "São Bernardo do Campo",
-        "São Caetano do Sul",
-        "São Carlos",
-        "São Gonçalo",
-        "São João de Meriti",
-        "São José",
-        "São José do Rio Preto",
-        "São José dos Campos",
-        "São José dos Pinhais",
-        "São Leopoldo",
-        "São Luís",
-        "São Paulo",
-        "São Vicente",
-        "Serra",
-        "Sete Lagoas",
-        "Sinop",
-        "Sobral",
-        "Sorocaba",
-        "Sumaré",
-        "Suzano",
-        "Taubaté",
-        "Teixeira de Freitas",
-        "Teresina",
-        "Tubarão",
-        "Uberaba",
-        "Uberlândia",
-        "Umuarama",
-        "Uruguaiana",
-        "Valinhos",
-        "Varginha",
-        "Várzea Grande",
-        "Vitória",
-        "Vitória da Conquista",
-        "Volta Redonda"
-    )
-}
-
-private fun normalize(text: String): String {
-    return Normalizer
-        .normalize(text.trim(), Normalizer.Form.NFD)
-        .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
-        .lowercase()
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -267,28 +51,18 @@ fun AddTourStopScreen(
     onNavigateBack: () -> Unit,
     viewModel: TourStopViewModel = hiltViewModel()
 ) {
-    val uiState = viewModel.uiState
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     var expanded by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
 
-    val filteredCities = remember(uiState.cityName) {
-        val query = normalize(uiState.cityName)
-
-        if (query.isBlank()) {
-            BrazilCities.all.take(20)
-        } else {
-            val startsWithMatches = BrazilCities.all.filter {
-                normalize(it).startsWith(query)
-            }
-
-            val containsMatches = BrazilCities.all.filter {
-                !normalize(it).startsWith(query) && normalize(it).contains(query)
-            }
-
-            (startsWithMatches + containsMatches).take(30)
-        }
+    val filteredCities = remember(uiState.cityName, uiState.availableCities) {
+        filterBrazilCities(
+            allCities = uiState.availableCities,
+            query = uiState.cityName,
+            limit = 40
+        )
     }
 
     LaunchedEffect(uiState.savedSuccessfully) {
@@ -333,9 +107,7 @@ fun AddTourStopScreen(
 
                     ExposedDropdownMenuBox(
                         expanded = expanded && filteredCities.isNotEmpty(),
-                        onExpandedChange = {
-                            expanded = !expanded
-                        }
+                        onExpandedChange = { expanded = !expanded }
                     ) {
                         OutlinedTextField(
                             value = uiState.cityName,

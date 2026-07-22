@@ -11,8 +11,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.Normalizer
 import java.time.LocalDate
+import java.util.Locale
 import javax.inject.Inject
+
+data class SearchableCity(
+    val original: String,
+    val normalized: String
+)
 
 data class TourStopUiState(
     val cityName: String = "",
@@ -20,7 +27,9 @@ data class TourStopUiState(
     val isSaving: Boolean = false,
     val savedSuccessfully: Boolean = false,
     val errorMessage: String? = null,
-    val availableCities: List<String> = emptyList()
+    val availableCities: List<String> = emptyList(),
+    val filteredCities: List<String> = emptyList(),
+    val showSuggestions: Boolean = false
 )
 
 @HiltViewModel
@@ -32,6 +41,8 @@ class TourStopViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(TourStopUiState())
     val uiState = _uiState.asStateFlow()
 
+    private var searchableCities: List<SearchableCity> = emptyList()
+
     init {
         loadBrazilCities()
     }
@@ -40,6 +51,13 @@ class TourStopViewModel @Inject constructor(
         runCatching {
             BrazilCitiesAssetDataSource.loadCities(application)
         }.onSuccess { cities ->
+            searchableCities = cities.map { city ->
+                SearchableCity(
+                    original = city,
+                    normalized = normalizeCityText(city)
+                )
+            }
+
             _uiState.update { current ->
                 current.copy(availableCities = cities)
             }
@@ -51,7 +69,49 @@ class TourStopViewModel @Inject constructor(
     }
 
     fun onCityNameChange(value: String) {
-        _uiState.update { it.copy(cityName = value) }
+        val query = value.trim()
+        val normalizedQuery = normalizeCityText(query)
+
+        val suggestions = if (normalizedQuery.isBlank()) {
+            emptyList()
+        } else {
+            val startsWithMatches = searchableCities
+                .asSequence()
+                .filter { it.normalized.startsWith(normalizedQuery) }
+                .map { it.original }
+                .toList()
+
+            val containsMatches = searchableCities
+                .asSequence()
+                .filter {
+                    !it.normalized.startsWith(normalizedQuery) &&
+                            it.normalized.contains(normalizedQuery)
+                }
+                .map { it.original }
+                .toList()
+
+            (startsWithMatches + containsMatches)
+                .distinct()
+                .take(20)
+        }
+
+        _uiState.update {
+            it.copy(
+                cityName = value,
+                filteredCities = suggestions,
+                showSuggestions = suggestions.isNotEmpty()
+            )
+        }
+    }
+
+    fun onCitySelected(city: String) {
+        _uiState.update {
+            it.copy(
+                cityName = city,
+                filteredCities = emptyList(),
+                showSuggestions = false
+            )
+        }
     }
 
     fun onShowDateChange(date: LocalDate) {
@@ -64,6 +124,10 @@ class TourStopViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
+    }
+
+    fun dismissSuggestions() {
+        _uiState.update { it.copy(showSuggestions = false) }
     }
 
     fun saveTourStop(tourId: Long) {
@@ -102,5 +166,12 @@ class TourStopViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun normalizeCityText(text: String): String {
+        return Normalizer.normalize(text, Normalizer.Form.NFD)
+            .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+            .lowercase(Locale.getDefault())
+            .trim()
     }
 }

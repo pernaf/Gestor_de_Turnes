@@ -57,14 +57,6 @@ fun AddTourStopScreen(
     var expanded by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
 
-    val filteredCities = remember(uiState.cityName, uiState.availableCities) {
-        filterBrazilCities(
-            allCities = uiState.availableCities,
-            query = uiState.cityName,
-            limit = 40
-        )
-    }
-
     LaunchedEffect(uiState.savedSuccessfully) {
         if (uiState.savedSuccessfully) {
             viewModel.clearSavedState()
@@ -106,8 +98,10 @@ fun AddTourStopScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
                     ExposedDropdownMenuBox(
-                        expanded = expanded && filteredCities.isNotEmpty(),
-                        onExpandedChange = { expanded = !expanded }
+                        expanded = expanded && uiState.showSuggestions,
+                        onExpandedChange = {
+                            expanded = !expanded && uiState.filteredCities.isNotEmpty()
+                        }
                     ) {
                         OutlinedTextField(
                             value = uiState.cityName,
@@ -122,19 +116,24 @@ fun AddTourStopScreen(
                                 .menuAnchor(),
                             singleLine = true,
                             trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                                ExposedDropdownMenuDefaults.TrailingIcon(
+                                    expanded = expanded && uiState.showSuggestions
+                                )
                             }
                         )
 
                         ExposedDropdownMenu(
-                            expanded = expanded && filteredCities.isNotEmpty(),
-                            onDismissRequest = { expanded = false }
+                            expanded = expanded && uiState.showSuggestions,
+                            onDismissRequest = {
+                                expanded = false
+                                viewModel.dismissSuggestions()
+                            }
                         ) {
-                            filteredCities.forEach { city ->
+                            uiState.filteredCities.forEach { city ->
                                 DropdownMenuItem(
                                     text = { Text(city) },
                                     onClick = {
-                                        viewModel.onCityNameChange(city)
+                                        viewModel.onCitySelected(city)
                                         expanded = false
                                     }
                                 )

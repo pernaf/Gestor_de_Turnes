@@ -22,5 +22,6 @@ data class IncomeEntity(
     val amount: Double,
     val date: String,
     val type: String,
-    val city: String
+    val city: String,
+    val notes: String = ""
 )

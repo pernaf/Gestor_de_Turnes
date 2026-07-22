@@ -38,7 +38,8 @@ class IncomeViewModel @Inject constructor(
         description: String,
         amount: Double,
         type: IncomeType,
-        city: String
+        city: String,
+        notes: String
     ) {
         viewModelScope.launch {
             _savedSuccessfully.value = false
@@ -54,7 +55,8 @@ class IncomeViewModel @Inject constructor(
                     amount = amount,
                     date = dateToUse,
                     type = type,
-                    city = city
+                    city = city,
+                    notes = notes
                 )
             )
 

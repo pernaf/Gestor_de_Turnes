@@ -52,6 +52,7 @@ fun AddIncomeScreen(
     var description by rememberSaveable { mutableStateOf("") }
     var amountText by rememberSaveable { mutableStateOf("") }
     var city by rememberSaveable { mutableStateOf(preselectedCity) }
+    var notes by rememberSaveable { mutableStateOf("") }
     var selectedType by rememberSaveable { mutableStateOf(IncomeType.SHOW) }
     var descError by rememberSaveable { mutableStateOf(false) }
     var amountError by rememberSaveable { mutableStateOf(false) }
@@ -69,6 +70,7 @@ fun AddIncomeScreen(
                 description = i.description
                 amountText = i.amount.toString()
                 city = i.city
+                notes = i.notes
                 selectedType = i.type
                 fieldsLoaded = true
             }
@@ -143,10 +145,19 @@ fun AddIncomeScreen(
             OutlinedTextField(
                 value = city,
                 onValueChange = { city = it },
-                label = { Text("Cidade (opcional)") },
+                label = { Text("Cidade") },
                 placeholder = { Text("Ex: São Paulo") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
+            )
+
+            OutlinedTextField(
+                value = notes,
+                onValueChange = { notes = it },
+                label = { Text("Observações") },
+                placeholder = { Text("Ex: Pagamento em dinheiro, parte do cachê, etc.") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3
             )
 
             Text("Tipo de Receita")
@@ -181,7 +192,8 @@ fun AddIncomeScreen(
                             description = description.trim(),
                             amount = amount!!,
                             type = selectedType,
-                            city = city.trim()
+                            city = city.trim(),
+                            notes = notes.trim()
                         )
                     }
                 },

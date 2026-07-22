@@ -350,7 +350,13 @@ fun TourDetailScreen(
                                                         title = income.description,
                                                         subtitle = buildString {
                                                             append("${income.type.emoji} ${income.type.label}")
+                                                            if (income.city.isNotBlank()) {
+                                                                append(" • ${income.city}")
+                                                            }
                                                             append(" • ${income.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}")
+                                                            if (income.notes.isNotBlank()) {
+                                                                append(" • ${income.notes}")
+                                                            }
                                                         },
                                                         amount = income.amount,
                                                         isExpense = false,

@@ -18,6 +18,8 @@ enum class ExpenseCategory(val label: String, val emoji: String) {
     ACCOMMODATION("Hospedagem", "🏨"),
     FOOD("Alimentação", "🍕"),
     EQUIPMENT("Equipamento", "🎸"),
+    TECH_CREW("Equipe Técnica", "🎛️"),
+    PRODUCTION("Produção", "🎬"),
     MARKETING("Marketing", "📣"),
     FEES("Taxas", "📄"),
     OTHER("Outros", "📦")

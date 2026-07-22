@@ -33,7 +33,8 @@ class IncomeRepositoryImpl @Inject constructor(
         amount = amount,
         date = LocalDate.parse(date),
         type = IncomeType.valueOf(type),
-        city = city
+        city = city,
+        notes = notes
     )
 
     private fun Income.toEntity() = IncomeEntity(
@@ -43,6 +44,7 @@ class IncomeRepositoryImpl @Inject constructor(
         amount = amount,
         date = date.toString(),
         type = type.name,
-        city = city
+        city = city,
+        notes = notes
     )
 }

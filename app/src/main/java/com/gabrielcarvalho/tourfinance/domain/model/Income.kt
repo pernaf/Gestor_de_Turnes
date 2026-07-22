@@ -9,7 +9,8 @@ data class Income(
     val amount: Double,
     val date: LocalDate,
     val type: IncomeType,
-    val city: String = ""
+    val city: String = "",
+    val notes: String = ""
 )
 
 enum class IncomeType(val label: String, val emoji: String) {

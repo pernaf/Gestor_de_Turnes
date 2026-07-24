@@ -153,6 +153,15 @@ fun AddExpenseScreen(
                 singleLine = true
             )
 
+            OutlinedTextField(
+                value = notes,
+                onValueChange = { notes = it },
+                label = { Text("Observações (opcional)") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2,
+                maxLines = 4
+            )
+
             Text(
                 text = "Categoria",
                 style = MaterialTheme.typography.titleSmall
@@ -170,15 +179,6 @@ fun AddExpenseScreen(
                     )
                 }
             }
-
-            OutlinedTextField(
-                value = notes,
-                onValueChange = { notes = it },
-                label = { Text("Observações (opcional)") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 2,
-                maxLines = 4
-            )
 
             Button(
                 onClick = {

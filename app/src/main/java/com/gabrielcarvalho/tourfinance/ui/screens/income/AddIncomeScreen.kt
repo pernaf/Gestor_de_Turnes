@@ -154,7 +154,7 @@ fun AddIncomeScreen(
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
-                label = { Text("Observações") },
+                label = { Text("Observações (opcional)") },
                 placeholder = { Text("Ex: Pagamento em dinheiro, parte do cachê, etc.") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3

@@ -35,9 +35,16 @@ sealed class Screen(val route: String) {
     object EditIncome : Screen("edit_income/{tourId}/{incomeId}") {
         fun createRoute(tourId: Long, incomeId: Long) = "edit_income/$tourId/$incomeId"
     }
+
     object Splash : Screen("splash")
 
     data object AddTourStop : Screen("add_tour_stop/{tourId}") {
         fun createRoute(tourId: Long) = "add_tour_stop/$tourId"
+    }
+
+    object CityDetail : Screen("city_detail/{tourId}/{cityName}") {
+        fun createRoute(tourId: Long, cityName: String): String {
+            return "city_detail/$tourId/${Uri.encode(cityName)}"
+        }
     }
 }

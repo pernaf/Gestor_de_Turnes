@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.gabrielcarvalho.tourfinance.ui.screens.band.BandListScreen
+import com.gabrielcarvalho.tourfinance.ui.screens.city.CityDetailScreen
 import com.gabrielcarvalho.tourfinance.ui.screens.expense.AddExpenseScreen
 import com.gabrielcarvalho.tourfinance.ui.screens.income.AddIncomeScreen
 import com.gabrielcarvalho.tourfinance.ui.screens.splash.SplashScreen
@@ -19,7 +20,7 @@ import com.gabrielcarvalho.tourfinance.ui.screens.tourstop.AddTourStopScreen
 fun AppNavHost(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Splash.route   // ← era Screen.BandList.route
+        startDestination = Screen.Splash.route
     ) {
 
         composable(Screen.Splash.route) {
@@ -40,7 +41,6 @@ fun AppNavHost(navController: NavHostController) {
             )
         }
 
-        // Lista de turnês da banda
         composable(
             route = Screen.TourList.route,
             arguments = listOf(
@@ -50,10 +50,11 @@ fun AppNavHost(navController: NavHostController) {
         ) { backStack ->
             val bandId = backStack.arguments?.getLong("bandId") ?: return@composable
             val bandName = backStack.arguments?.getString("bandName") ?: ""
+
             TourListScreen(
                 bandId = bandId,
                 bandName = bandName,
-                onTourClick = { tourId ->                          // ← era onNavigateToTour
+                onTourClick = { tourId ->
                     navController.navigate(Screen.TourDetail.createRoute(tourId))
                 },
                 onCreateTour = {
@@ -63,12 +64,14 @@ fun AppNavHost(navController: NavHostController) {
             )
         }
 
-        // Criar turnê
         composable(
             route = Screen.CreateTour.route,
-            arguments = listOf(navArgument("bandId") { type = NavType.LongType })
+            arguments = listOf(
+                navArgument("bandId") { type = NavType.LongType }
+            )
         ) { backStack ->
             val bandId = backStack.arguments?.getLong("bandId") ?: return@composable
+
             CreateTourScreen(
                 bandId = bandId,
                 onTourCreated = { navController.popBackStack() },
@@ -76,12 +79,14 @@ fun AppNavHost(navController: NavHostController) {
             )
         }
 
-        // Detalhe da turnê
         composable(
             route = Screen.TourDetail.route,
-            arguments = listOf(navArgument("tourId") { type = NavType.LongType })
+            arguments = listOf(
+                navArgument("tourId") { type = NavType.LongType }
+            )
         ) { backStack ->
             val tourId = backStack.arguments?.getLong("tourId") ?: return@composable
+
             TourDetailScreen(
                 tourId = tourId,
                 onAddExpense = { city ->
@@ -90,12 +95,46 @@ fun AppNavHost(navController: NavHostController) {
                 onAddIncome = { city ->
                     navController.navigate(Screen.AddIncome.createRoute(tourId, city))
                 },
-                onAddTourStop = { navController.navigate(Screen.AddTourStop.createRoute(tourId)) },
+                onAddTourStop = {
+                    navController.navigate(Screen.AddTourStop.createRoute(tourId))
+                },
                 onEditExpense = { expenseId ->
                     navController.navigate(Screen.EditExpense.createRoute(tourId, expenseId))
                 },
                 onEditIncome = { incomeId ->
                     navController.navigate(Screen.EditIncome.createRoute(tourId, incomeId))
+                },
+                onNavigateToCity = { cityName ->
+                    navController.navigate(Screen.CityDetail.createRoute(tourId, cityName))
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.CityDetail.route,
+            arguments = listOf(
+                navArgument("tourId") { type = NavType.LongType },
+                navArgument("cityName") { type = NavType.StringType }
+            )
+        ) { backStack ->
+            val tourId = backStack.arguments?.getLong("tourId") ?: return@composable
+            val cityName = backStack.arguments?.getString("cityName") ?: ""
+
+            CityDetailScreen(
+                tourId = tourId,
+                cityName = cityName,
+                onAddIncome = { city ->
+                    navController.navigate(Screen.AddIncome.createRoute(tourId, city))
+                },
+                onAddExpense = { city ->
+                    navController.navigate(Screen.AddExpense.createRoute(tourId, city))
+                },
+                onEditIncome = { incomeId ->
+                    navController.navigate(Screen.EditIncome.createRoute(tourId, incomeId))
+                },
+                onEditExpense = { expenseId ->
+                    navController.navigate(Screen.EditExpense.createRoute(tourId, expenseId))
                 },
                 onNavigateBack = { navController.popBackStack() }
             )
@@ -103,16 +142,18 @@ fun AppNavHost(navController: NavHostController) {
 
         composable(
             route = Screen.AddTourStop.route,
-            arguments = listOf(navArgument("tourId") { type = NavType.LongType })
+            arguments = listOf(
+                navArgument("tourId") { type = NavType.LongType }
+            )
         ) { backStack ->
             val tourId = backStack.arguments?.getLong("tourId") ?: return@composable
+
             AddTourStopScreen(
                 tourId = tourId,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
-        // Adicionar despesa
         composable(
             route = Screen.AddExpense.route,
             arguments = listOf(
@@ -134,7 +175,6 @@ fun AppNavHost(navController: NavHostController) {
             )
         }
 
-        // Adicionar receita
         composable(
             route = Screen.AddIncome.route,
             arguments = listOf(
@@ -156,7 +196,6 @@ fun AppNavHost(navController: NavHostController) {
             )
         }
 
-        // Editar despesa
         composable(
             route = Screen.EditExpense.route,
             arguments = listOf(
@@ -166,6 +205,7 @@ fun AppNavHost(navController: NavHostController) {
         ) { backStack ->
             val tourId = backStack.arguments?.getLong("tourId") ?: return@composable
             val expenseId = backStack.arguments?.getLong("expenseId") ?: return@composable
+
             AddExpenseScreen(
                 tourId = tourId,
                 expenseId = expenseId,
@@ -173,7 +213,6 @@ fun AppNavHost(navController: NavHostController) {
             )
         }
 
-        // Editar receita
         composable(
             route = Screen.EditIncome.route,
             arguments = listOf(
@@ -183,6 +222,7 @@ fun AppNavHost(navController: NavHostController) {
         ) { backStack ->
             val tourId = backStack.arguments?.getLong("tourId") ?: return@composable
             val incomeId = backStack.arguments?.getLong("incomeId") ?: return@composable
+
             AddIncomeScreen(
                 tourId = tourId,
                 incomeId = incomeId,

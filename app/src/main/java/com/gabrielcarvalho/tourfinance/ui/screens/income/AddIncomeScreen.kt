@@ -1,5 +1,6 @@
 package com.gabrielcarvalho.tourfinance.ui.screens.income
 
+import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -19,6 +20,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,14 +29,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gabrielcarvalho.tourfinance.domain.model.IncomeType
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +51,7 @@ fun AddIncomeScreen(
     onNavigateBack: () -> Unit,
     viewModel: IncomeViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val isEditing = incomeId != 0L
     val incomeToEdit by viewModel.incomeToEdit.collectAsStateWithLifecycle()
     val savedSuccessfully by viewModel.savedSuccessfully.collectAsStateWithLifecycle()
@@ -54,9 +61,12 @@ fun AddIncomeScreen(
     var city by rememberSaveable { mutableStateOf(preselectedCity) }
     var notes by rememberSaveable { mutableStateOf("") }
     var selectedType by rememberSaveable { mutableStateOf(IncomeType.SHOW) }
+    var selectedDate by rememberSaveable { mutableStateOf(LocalDate.now()) }
     var descError by rememberSaveable { mutableStateOf(false) }
     var amountError by rememberSaveable { mutableStateOf(false) }
     var fieldsLoaded by rememberSaveable { mutableStateOf(false) }
+
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
 
     LaunchedEffect(incomeId) {
         if (isEditing) {
@@ -72,6 +82,7 @@ fun AddIncomeScreen(
                 city = i.city
                 notes = i.notes
                 selectedType = i.type
+                selectedDate = i.date
                 fieldsLoaded = true
             }
         }
@@ -83,6 +94,16 @@ fun AddIncomeScreen(
             onNavigateBack()
         }
     }
+
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
+        },
+        selectedDate.year,
+        selectedDate.monthValue - 1,
+        selectedDate.dayOfMonth
+    )
 
     Scaffold(
         topBar = {
@@ -142,6 +163,18 @@ fun AddIncomeScreen(
                 singleLine = true
             )
 
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text("Data")
+                OutlinedButton(
+                    onClick = { datePickerDialog.show() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(selectedDate.format(dateFormatter))
+                }
+            }
+
             OutlinedTextField(
                 value = city,
                 onValueChange = { city = it },
@@ -191,6 +224,7 @@ fun AddIncomeScreen(
                             incomeId = if (isEditing) incomeId else 0L,
                             description = description.trim(),
                             amount = amount!!,
+                            date = selectedDate,
                             type = selectedType,
                             city = city.trim(),
                             notes = notes.trim()

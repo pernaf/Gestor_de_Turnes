@@ -37,6 +37,7 @@ class IncomeViewModel @Inject constructor(
         incomeId: Long = 0L,
         description: String,
         amount: Double,
+        date: LocalDate,
         type: IncomeType,
         city: String,
         notes: String
@@ -44,16 +45,13 @@ class IncomeViewModel @Inject constructor(
         viewModelScope.launch {
             _savedSuccessfully.value = false
 
-            val originalIncome = if (incomeId != 0L) _incomeToEdit.value else null
-            val dateToUse = originalIncome?.date ?: LocalDate.now()
-
             repository.insertIncome(
                 Income(
                     id = incomeId,
                     tourId = tourId,
                     description = description,
                     amount = amount,
-                    date = dateToUse,
+                    date = date,
                     type = type,
                     city = city,
                     notes = notes

@@ -1,5 +1,6 @@
 package com.gabrielcarvalho.tourfinance.ui.screens.expense
 
+import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -20,6 +21,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -28,14 +30,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gabrielcarvalho.tourfinance.domain.model.ExpenseCategory
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -46,19 +52,22 @@ fun AddExpenseScreen(
     onNavigateBack: () -> Unit,
     viewModel: ExpenseViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val isEditing = expenseId != null
     val expenseToEdit by viewModel.expenseToEdit.collectAsStateWithLifecycle()
-
     val savedSuccessfully by viewModel.savedSuccessfully.collectAsStateWithLifecycle()
 
     var description by rememberSaveable { mutableStateOf("") }
     var amountText by rememberSaveable { mutableStateOf("") }
     var selectedCat by rememberSaveable { mutableStateOf(ExpenseCategory.OTHER) }
+    var selectedDate by rememberSaveable { mutableStateOf(LocalDate.now()) }
     var notes by rememberSaveable { mutableStateOf("") }
     var descError by rememberSaveable { mutableStateOf(false) }
     var amountError by rememberSaveable { mutableStateOf(false) }
     var fieldsLoaded by rememberSaveable { mutableStateOf(false) }
     var city by rememberSaveable { mutableStateOf(preselectedCity) }
+
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
 
     LaunchedEffect(expenseId) {
         if (isEditing && expenseId != null) {
@@ -72,6 +81,7 @@ fun AddExpenseScreen(
                 description = e.description
                 amountText = e.amount.toString()
                 selectedCat = e.category
+                selectedDate = e.date
                 notes = e.notes
                 city = e.city
                 fieldsLoaded = true
@@ -85,6 +95,16 @@ fun AddExpenseScreen(
             onNavigateBack()
         }
     }
+
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
+        },
+        selectedDate.year,
+        selectedDate.monthValue - 1,
+        selectedDate.dayOfMonth
+    )
 
     Scaffold(
         topBar = {
@@ -144,6 +164,18 @@ fun AddExpenseScreen(
                 singleLine = true
             )
 
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text("Data")
+                OutlinedButton(
+                    onClick = { datePickerDialog.show() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(selectedDate.format(dateFormatter))
+                }
+            }
+
             OutlinedTextField(
                 value = city,
                 onValueChange = { city = it },
@@ -196,6 +228,7 @@ fun AddExpenseScreen(
                             expenseId = expenseId ?: 0L,
                             description = description.trim(),
                             amount = amount!!,
+                            date = selectedDate,
                             category = selectedCat,
                             notes = notes.trim(),
                             city = city.trim()

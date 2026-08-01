@@ -37,15 +37,13 @@ class ExpenseViewModel @Inject constructor(
         expenseId: Long = 0L,
         description: String,
         amount: Double,
+        date: LocalDate,
         category: ExpenseCategory,
         notes: String,
         city: String
     ) {
         viewModelScope.launch {
             _savedSuccessfully.value = false
-
-            val originalExpense = if (expenseId != 0L) _expenseToEdit.value else null
-            val dateToUse = originalExpense?.date ?: LocalDate.now()
 
             repository.insertExpense(
                 Expense(
@@ -54,7 +52,7 @@ class ExpenseViewModel @Inject constructor(
                     description = description,
                     amount = amount,
                     category = category,
-                    date = dateToUse,
+                    date = date,
                     notes = notes,
                     city = city
                 )

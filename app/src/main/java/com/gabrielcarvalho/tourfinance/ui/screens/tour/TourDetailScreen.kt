@@ -1,5 +1,7 @@
 package com.gabrielcarvalho.tourfinance.ui.screens.tour
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,8 +13,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
@@ -20,7 +25,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -36,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -102,7 +108,7 @@ fun TourDetailScreen(
                 title = { Text(uiState.tour?.name ?: "Carregando...") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        androidx.compose.material3.Icon(
+                        Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Voltar"
                         )
@@ -133,11 +139,49 @@ fun TourDetailScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 item {
+                    Card(
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Resumo da turnê",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                            )
+
+                            Text(
+                                text = uiState.tour?.name ?: "",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+
+                            Text(
+                                text = "Início: ${uiState.tour?.startDate?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}" +
+                                        (uiState.tour?.endDate?.let {
+                                            " • Encerrada: ${it.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}"
+                                        } ?: ""),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
+                            )
+                        }
+                    }
+                }
+
+                item {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         FinanceCard(
@@ -157,7 +201,7 @@ fun TourDetailScreen(
 
                 item {
                     FinanceCard(
-                        title = "Saldo da Tour",
+                        title = "Saldo da tour",
                         amount = uiState.balance,
                         isPositive = uiState.balance >= 0,
                         modifier = Modifier.fillMaxWidth()
@@ -167,130 +211,224 @@ fun TourDetailScreen(
                 item {
                     OutlinedButton(
                         onClick = onAddTourStop,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Text("+ Cidade da turnê")
                     }
                 }
 
-                if (uiState.tourStops.isEmpty()) {
-                    item {
-                        HorizontalDivider()
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 20.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "Cidades da Turnê",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = "Nenhuma cidade adicionada ainda. Cadastre as paradas da turnê para organizar receitas e despesas por cidade.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                } else {
-                    item {
-                        HorizontalDivider()
+                item {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Text(
-                            text = "Cidades da Turnê (${uiState.tourStops.size})",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(top = 4.dp)
+                            text = "Cidades da turnê",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (uiState.tourStops.isEmpty()) {
+                                "Adicione as paradas para organizar receitas e despesas por cidade."
+                            } else {
+                                "${uiState.tourStops.size} cidade(s) cadastrada(s)"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                }
 
-                    items(citySections, key = { "city_${it.stopId}" }) { section ->
+                if (uiState.tourStops.isEmpty()) {
+                    item {
                         Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onNavigateToCity(section.city) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surface
                             )
                         ) {
                             Column(
-                                modifier = Modifier.padding(16.dp)
+                                modifier = Modifier.padding(18.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Text(
-                                    text = section.city,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
+                                    text = "Nenhuma cidade adicionada ainda",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold
                                 )
-
-                                Spacer(modifier = Modifier.height(2.dp))
-
                                 Text(
-                                    text = "Show em ${section.showDateText}",
-                                    style = MaterialTheme.typography.bodySmall,
+                                    text = "Cadastre as paradas da turnê para acompanhar resultados por cidade e manter a organização financeira do percurso.",
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-
-                                Spacer(modifier = Modifier.height(2.dp))
-
-                                Text(
-                                    text = "${section.totalTransactions} movimentação(ões)",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.fillMaxWidth()
+                            }
+                        }
+                    }
+                } else {
+                    items(citySections, key = { "city_${it.stopId}" }) { section ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onNavigateToCity(section.city) },
+                            shape = RoundedCornerShape(24.dp),
+                            border = BorderStroke(
+                                width = 2.dp,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                            ),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(
+                                            RoundedCornerShape(
+                                                topStart = 24.dp,
+                                                topEnd = 24.dp,
+                                                bottomStart = 18.dp,
+                                                bottomEnd = 18.dp
+                                            )
+                                        )
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
+                                        .padding(horizontal = 18.dp, vertical = 14.dp)
                                 ) {
-                                    FinanceCard(
-                                        title = "Receitas",
-                                        amount = section.totalIncome,
-                                        isPositive = true,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    FinanceCard(
-                                        title = "Despesas",
-                                        amount = section.totalExpenses,
-                                        isPositive = false,
-                                        modifier = Modifier.weight(1f)
-                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.weight(1f),
+                                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text(
+                                                text = section.city,
+                                                style = MaterialTheme.typography.titleLarge,
+                                                fontWeight = FontWeight.Bold
+                                            )
+
+                                            Text(
+                                                text = "Show em ${section.showDateText}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+
+                                        Box(
+                                            modifier = Modifier
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                                                    shape = CircleShape
+                                                )
+                                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                                        ) {
+                                            Text(
+                                                text = "${section.totalTransactions} mov.",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                    }
                                 }
 
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Column(
+                                    modifier = Modifier.padding(18.dp),
+                                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                                ) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        FinanceCard(
+                                            title = "Receitas",
+                                            amount = section.totalIncome,
+                                            isPositive = true,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        FinanceCard(
+                                            title = "Despesas",
+                                            amount = section.totalExpenses,
+                                            isPositive = false,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
 
-                                FinanceCard(
-                                    title = "Saldo em ${section.city}",
-                                    amount = section.balance,
-                                    isPositive = section.balance >= 0,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(18.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)
+                                        )
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "Saldo da cidade",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
 
-                                Spacer(modifier = Modifier.height(8.dp))
+                                            Text(
+                                                text = "R$ ${"%,.2f".format(section.balance)}",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (section.balance >= 0) {
+                                                    MaterialTheme.colorScheme.primary
+                                                } else {
+                                                    MaterialTheme.colorScheme.error
+                                                }
+                                            )
+                                        }
+                                    }
 
-                                Text(
-                                    text = "Toque para abrir os detalhes da cidade",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(
+                                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                                shape = RoundedCornerShape(14.dp)
+                                            )
+                                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    shape = CircleShape
+                                                )
+                                        )
+
+                                        Text(
+                                            text = "Toque para abrir os detalhes da cidade",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
 
                 item {
-                    HorizontalDivider()
-                    Text(
-                        text = "Início: ${uiState.tour?.startDate?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}" +
-                                (uiState.tour?.endDate?.let {
-                                    " • Encerrada: ${it.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}"
-                                } ?: ""),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }

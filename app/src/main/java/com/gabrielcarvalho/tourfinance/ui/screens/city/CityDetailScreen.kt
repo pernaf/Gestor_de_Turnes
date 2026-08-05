@@ -1,5 +1,7 @@
 package com.gabrielcarvalho.tourfinance.ui.screens.city
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,9 +11,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachMoney
@@ -19,9 +24,11 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.RemoveShoppingCart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -90,6 +97,7 @@ fun CityDetailScreen(
     val totalIncome = remember(cityIncomes) { cityIncomes.sumOf { it.amount } }
     val totalExpenses = remember(cityExpenses) { cityExpenses.sumOf { it.amount } }
     val balance = totalIncome - totalExpenses
+    val totalTransactions = cityIncomes.size + cityExpenses.size
 
     Scaffold(
         topBar = {
@@ -121,37 +129,54 @@ fun CityDetailScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 item {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = cityName,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
+                    Card(
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primary
                         )
-
-                        cityStop?.let { stop ->
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             Text(
-                                text = "Show em ${stop.showDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "Visão da cidade",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                            )
+
+                            Text(
+                                text = cityName,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+
+                            cityStop?.let { stop ->
+                                Text(
+                                    text = "Show em ${stop.showDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.92f)
+                                )
+                            }
+
+                            Text(
+                                text = "$totalTransactions movimentação(ões)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.82f)
                             )
                         }
-
-                        Text(
-                            text = "${cityIncomes.size + cityExpenses.size} movimentação(ões)",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
 
                 item {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         FinanceCard(
@@ -180,12 +205,16 @@ fun CityDetailScreen(
 
                 item {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Button(
                             onClick = { onAddIncome(cityName) },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AttachMoney,
@@ -197,7 +226,8 @@ fun CityDetailScreen(
 
                         OutlinedButton(
                             onClick = { onAddExpense(cityName) },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.RemoveShoppingCart,
@@ -212,24 +242,32 @@ fun CityDetailScreen(
                 item {
                     OutlinedButton(
                         onClick = { showDeleteCityDialog = true },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(
+                            1.5.dp,
+                            MaterialTheme.colorScheme.error.copy(alpha = 0.45f)
+                        )
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = null
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Excluir cidade")
+                        Text(
+                            text = "Excluir cidade",
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
 
                 if (cityIncomes.isNotEmpty()) {
                     item {
-                        HorizontalDivider()
-                        Text(
-                            text = "Receitas (${cityIncomes.size})",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
+                        SectionHeader(
+                            title = "Receitas",
+                            count = cityIncomes.size,
+                            accentColor = MaterialTheme.colorScheme.primary
                         )
                     }
 
@@ -257,11 +295,10 @@ fun CityDetailScreen(
 
                 if (cityExpenses.isNotEmpty()) {
                     item {
-                        HorizontalDivider()
-                        Text(
-                            text = "Despesas (${cityExpenses.size})",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
+                        SectionHeader(
+                            title = "Despesas",
+                            count = cityExpenses.size,
+                            accentColor = MaterialTheme.colorScheme.error
                         )
                     }
 
@@ -289,25 +326,55 @@ fun CityDetailScreen(
 
                 if (cityIncomes.isEmpty() && cityExpenses.isEmpty()) {
                     item {
-                        HorizontalDivider()
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 20.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(22.dp),
+                            border = BorderStroke(
+                                width = 2.dp,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                            ),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            )
                         ) {
-                            Text(
-                                text = "Nenhuma movimentação ainda",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = "Adicione receitas e despesas desta cidade para acompanhar o resultado do show.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(10.dp)
+                                            .background(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                shape = CircleShape
+                                            )
+                                    )
+
+                                    Text(
+                                        text = "Nenhuma movimentação ainda",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+
+                                Text(
+                                    text = "Adicione receitas e despesas desta cidade para acompanhar o resultado do show.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
+                }
+
+                item {
+                    Spacer(modifier = Modifier.padding(bottom = 6.dp))
                 }
             }
         }
@@ -389,5 +456,42 @@ fun CityDetailScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun SectionHeader(
+    title: String,
+    count: Int,
+    accentColor: androidx.compose.ui.graphics.Color
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = accentColor.copy(alpha = 0.10f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = accentColor
+            )
+
+            Text(
+                text = "$count item(ns)",
+                style = MaterialTheme.typography.bodySmall,
+                color = accentColor,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }

@@ -1,9 +1,7 @@
 package com.gabrielcarvalho.tourfinance.ui.screens.tourstop
 
-import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gabrielcarvalho.tourfinance.data.local.staticdata.BrazilCitiesAssetDataSource
 import com.gabrielcarvalho.tourfinance.domain.model.TourStop
 import com.gabrielcarvalho.tourfinance.domain.model.repository.TourStopRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -11,107 +9,39 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.Normalizer
 import java.time.LocalDate
-import java.util.Locale
 import javax.inject.Inject
 
-data class SearchableCity(
-    val original: String,
-    val normalized: String
-)
-
 data class TourStopUiState(
+    val state: String = "",
     val cityName: String = "",
     val showDate: LocalDate = LocalDate.now(),
     val isSaving: Boolean = false,
     val savedSuccessfully: Boolean = false,
     val errorMessage: String? = null,
-    val availableCities: List<String> = emptyList(),
-    val filteredCities: List<String> = emptyList(),
-    val showSuggestions: Boolean = false
+    val availableStates: List<String> = brazilStates
+)
+
+private val brazilStates = listOf(
+    "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
+    "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
+    "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"
 )
 
 @HiltViewModel
 class TourStopViewModel @Inject constructor(
-    private val application: Application,
     private val repository: TourStopRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TourStopUiState())
     val uiState = _uiState.asStateFlow()
 
-    private var searchableCities: List<SearchableCity> = emptyList()
-
-    init {
-        loadBrazilCities()
-    }
-
-    private fun loadBrazilCities() {
-        runCatching {
-            BrazilCitiesAssetDataSource.loadCities(application)
-        }.onSuccess { cities ->
-            searchableCities = cities.map { city ->
-                SearchableCity(
-                    original = city,
-                    normalized = normalizeCityText(city)
-                )
-            }
-
-            _uiState.update { current ->
-                current.copy(availableCities = cities)
-            }
-        }.onFailure {
-            _uiState.update {
-                it.copy(errorMessage = "Não foi possível carregar a lista de cidades")
-            }
-        }
+    fun onStateChange(value: String) {
+        _uiState.update { it.copy(state = value) }
     }
 
     fun onCityNameChange(value: String) {
-        val query = value.trim()
-        val normalizedQuery = normalizeCityText(query)
-
-        val suggestions = if (normalizedQuery.isBlank()) {
-            emptyList()
-        } else {
-            val startsWithMatches = searchableCities
-                .asSequence()
-                .filter { it.normalized.startsWith(normalizedQuery) }
-                .map { it.original }
-                .toList()
-
-            val containsMatches = searchableCities
-                .asSequence()
-                .filter {
-                    !it.normalized.startsWith(normalizedQuery) &&
-                            it.normalized.contains(normalizedQuery)
-                }
-                .map { it.original }
-                .toList()
-
-            (startsWithMatches + containsMatches)
-                .distinct()
-                .take(20)
-        }
-
-        _uiState.update {
-            it.copy(
-                cityName = value,
-                filteredCities = suggestions,
-                showSuggestions = suggestions.isNotEmpty()
-            )
-        }
-    }
-
-    fun onCitySelected(city: String) {
-        _uiState.update {
-            it.copy(
-                cityName = city,
-                filteredCities = emptyList(),
-                showSuggestions = false
-            )
-        }
+        _uiState.update { it.copy(cityName = value) }
     }
 
     fun onShowDateChange(date: LocalDate) {
@@ -126,17 +56,20 @@ class TourStopViewModel @Inject constructor(
         _uiState.update { it.copy(errorMessage = null) }
     }
 
-    fun dismissSuggestions() {
-        _uiState.update { it.copy(showSuggestions = false) }
-    }
-
     fun saveTourStop(tourId: Long) {
         val state = _uiState.value
 
-        if (state.cityName.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Selecione uma cidade") }
+        if (state.state.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "Selecione o estado") }
             return
         }
+
+        if (state.cityName.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "Digite a cidade") }
+            return
+        }
+
+        val formattedCityName = "${state.cityName.trim()} - ${state.state}"
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
@@ -146,7 +79,7 @@ class TourStopViewModel @Inject constructor(
                     TourStop(
                         id = 0L,
                         tourId = tourId,
-                        cityName = state.cityName.trim(),
+                        cityName = formattedCityName,
                         showDate = state.showDate
                     )
                 )
@@ -166,12 +99,5 @@ class TourStopViewModel @Inject constructor(
                 }
             }
         }
-    }
-
-    private fun normalizeCityText(text: String): String {
-        return Normalizer.normalize(text, Normalizer.Form.NFD)
-            .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
-            .lowercase(Locale.getDefault())
-            .trim()
     }
 }

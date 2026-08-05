@@ -54,8 +54,8 @@ fun AddTourStopScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    var expanded by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var stateDropdownExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.savedSuccessfully) {
         if (uiState.savedSuccessfully) {
@@ -98,48 +98,54 @@ fun AddTourStopScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
                     ExposedDropdownMenuBox(
-                        expanded = expanded && uiState.showSuggestions,
+                        expanded = stateDropdownExpanded,
                         onExpandedChange = {
-                            expanded = !expanded && uiState.filteredCities.isNotEmpty()
+                            stateDropdownExpanded = !stateDropdownExpanded
                         }
                     ) {
                         OutlinedTextField(
-                            value = uiState.cityName,
-                            onValueChange = {
-                                viewModel.onCityNameChange(it)
-                                expanded = true
-                            },
-                            label = { Text("Cidade") },
-                            placeholder = { Text("Digite a cidade do show") },
+                            value = uiState.state,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Estado") },
+                            placeholder = { Text("Selecione o estado") },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .menuAnchor(),
                             singleLine = true,
                             trailingIcon = {
                                 ExposedDropdownMenuDefaults.TrailingIcon(
-                                    expanded = expanded && uiState.showSuggestions
+                                    expanded = stateDropdownExpanded
                                 )
                             }
                         )
 
                         ExposedDropdownMenu(
-                            expanded = expanded && uiState.showSuggestions,
+                            expanded = stateDropdownExpanded,
                             onDismissRequest = {
-                                expanded = false
-                                viewModel.dismissSuggestions()
+                                stateDropdownExpanded = false
                             }
                         ) {
-                            uiState.filteredCities.forEach { city ->
+                            uiState.availableStates.forEach { state ->
                                 DropdownMenuItem(
-                                    text = { Text(city) },
+                                    text = { Text(state) },
                                     onClick = {
-                                        viewModel.onCitySelected(city)
-                                        expanded = false
+                                        viewModel.onStateChange(state)
+                                        stateDropdownExpanded = false
                                     }
                                 )
                             }
                         }
                     }
+
+                    OutlinedTextField(
+                        value = uiState.cityName,
+                        onValueChange = viewModel::onCityNameChange,
+                        label = { Text("Cidade") },
+                        placeholder = { Text("Digite a cidade do show") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
 
                     Column(
                         modifier = Modifier
@@ -163,7 +169,7 @@ fun AddTourStopScreen(
                     }
 
                     Text(
-                        text = "Selecione a cidade e a data em que o show será realizado.",
+                        text = "Selecione o estado, digite a cidade manualmente e escolha a data do show.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

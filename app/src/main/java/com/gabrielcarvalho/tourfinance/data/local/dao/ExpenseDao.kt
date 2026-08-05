@@ -17,6 +17,9 @@ interface ExpenseDao {
     @Query("SELECT COALESCE(SUM(amount), 0.0) FROM expenses WHERE tourId = :tourId")
     fun getTotalExpenses(tourId: Long): Flow<Double>
 
+    @Query("DELETE FROM expenses WHERE tourId = :tourId AND LOWER(city) = LOWER(:cityName)")
+    suspend fun deleteByTourAndCity(tourId: Long, cityName: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(expense: ExpenseEntity): Long
 

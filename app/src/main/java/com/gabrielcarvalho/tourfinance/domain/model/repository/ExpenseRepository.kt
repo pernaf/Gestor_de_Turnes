@@ -8,4 +8,5 @@ interface ExpenseRepository {
     fun getTotalExpenses(tourId: Long): Flow<Double>
     suspend fun insertExpense(expense: Expense): Long
     suspend fun deleteExpense(expense: Expense)
+    suspend fun deleteByTourAndCity(tourId: Long, cityName: String)
 }

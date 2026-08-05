@@ -17,6 +17,9 @@ interface IncomeDao {
     @Query("SELECT COALESCE(SUM(amount), 0.0) FROM incomes WHERE tourId = :tourId")
     fun getTotalIncome(tourId: Long): Flow<Double>
 
+    @Query("DELETE FROM incomes WHERE tourId = :tourId AND LOWER(city) = LOWER(:cityName)")
+    suspend fun deleteByTourAndCity(tourId: Long, cityName: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(income: IncomeEntity): Long
 

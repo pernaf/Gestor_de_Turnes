@@ -15,7 +15,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.RemoveShoppingCart
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,19 +28,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gabrielcarvalho.tourfinance.domain.model.Expense
+import com.gabrielcarvalho.tourfinance.domain.model.Income
 import com.gabrielcarvalho.tourfinance.ui.components.FinanceCard
-import com.gabrielcarvalho.tourfinance.ui.components.SwipeToDeleteItem
 import com.gabrielcarvalho.tourfinance.ui.components.TransactionItem
 import com.gabrielcarvalho.tourfinance.ui.screens.tour.TourViewModel
 import java.time.format.DateTimeFormatter
@@ -60,6 +66,10 @@ fun CityDetailScreen(
     }
 
     val uiState by viewModel.detailUiState.collectAsStateWithLifecycle()
+
+    var showDeleteCityDialog by remember { mutableStateOf(false) }
+    var incomeToDelete by remember { mutableStateOf<Income?>(null) }
+    var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
 
     val cityStop = remember(uiState.tourStops, cityName) {
         uiState.tourStops.firstOrNull { it.cityName.equals(cityName, ignoreCase = true) }
@@ -199,6 +209,20 @@ fun CityDetailScreen(
                     }
                 }
 
+                item {
+                    OutlinedButton(
+                        onClick = { showDeleteCityDialog = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Excluir cidade")
+                    }
+                }
+
                 if (cityIncomes.isNotEmpty()) {
                     item {
                         HorizontalDivider()
@@ -210,27 +234,24 @@ fun CityDetailScreen(
                     }
 
                     items(cityIncomes, key = { "income_${it.id}" }) { income ->
-                        SwipeToDeleteItem(
-                            onDelete = { viewModel.deleteIncome(income) }
-                        ) {
-                            TransactionItem(
-                                emoji = income.type.emoji,
-                                title = income.description,
-                                subtitle = buildString {
-                                    append("${income.type.emoji} ${income.type.label}")
-                                    if (income.city.isNotBlank()) {
-                                        append(" • ${income.city}")
-                                    }
-                                    append(" • ${income.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}")
-                                    if (income.notes.isNotBlank()) {
-                                        append(" • ${income.notes}")
-                                    }
-                                },
-                                amount = income.amount,
-                                isExpense = false,
-                                onClick = { onEditIncome(income.id) }
-                            )
-                        }
+                        TransactionItem(
+                            emoji = income.type.emoji,
+                            title = income.description,
+                            subtitle = buildString {
+                                append("${income.type.emoji} ${income.type.label}")
+                                if (income.city.isNotBlank()) {
+                                    append(" • ${income.city}")
+                                }
+                                append(" • ${income.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}")
+                                if (income.notes.isNotBlank()) {
+                                    append(" • ${income.notes}")
+                                }
+                            },
+                            amount = income.amount,
+                            isExpense = false,
+                            onClick = { onEditIncome(income.id) },
+                            onLongClick = { incomeToDelete = income }
+                        )
                     }
                 }
 
@@ -245,27 +266,24 @@ fun CityDetailScreen(
                     }
 
                     items(cityExpenses, key = { "expense_${it.id}" }) { expense ->
-                        SwipeToDeleteItem(
-                            onDelete = { viewModel.deleteExpense(expense) }
-                        ) {
-                            TransactionItem(
-                                emoji = expense.category.emoji,
-                                title = expense.description,
-                                subtitle = buildString {
-                                    append("${expense.category.emoji} ${expense.category.label}")
-                                    if (expense.city.isNotBlank()) {
-                                        append(" • ${expense.city}")
-                                    }
-                                    append(" • ${expense.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}")
-                                    if (expense.notes.isNotBlank()) {
-                                        append(" • ${expense.notes}")
-                                    }
-                                },
-                                amount = expense.amount,
-                                isExpense = true,
-                                onClick = { onEditExpense(expense.id) }
-                            )
-                        }
+                        TransactionItem(
+                            emoji = expense.category.emoji,
+                            title = expense.description,
+                            subtitle = buildString {
+                                append("${expense.category.emoji} ${expense.category.label}")
+                                if (expense.city.isNotBlank()) {
+                                    append(" • ${expense.city}")
+                                }
+                                append(" • ${expense.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}")
+                                if (expense.notes.isNotBlank()) {
+                                    append(" • ${expense.notes}")
+                                }
+                            },
+                            amount = expense.amount,
+                            isExpense = true,
+                            onClick = { onEditExpense(expense.id) },
+                            onLongClick = { expenseToDelete = expense }
+                        )
                     }
                 }
 
@@ -293,5 +311,83 @@ fun CityDetailScreen(
                 }
             }
         }
+    }
+
+    if (showDeleteCityDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteCityDialog = false },
+            title = { Text("Excluir cidade") },
+            text = {
+                Text("Deseja excluir \"$cityName\" da turnê? Esta ação remove a cidade e também todas as receitas e despesas vinculadas a ela.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        cityStop?.let { stop ->
+                            viewModel.deleteCityWithTransactions(stop)
+                        }
+                        showDeleteCityDialog = false
+                        onNavigateBack()
+                    }
+                ) {
+                    Text("Excluir")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteCityDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    if (incomeToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { incomeToDelete = null },
+            title = { Text("Excluir receita") },
+            text = {
+                Text("Deseja excluir a receita \"${incomeToDelete?.description}\"?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        incomeToDelete?.let { viewModel.deleteIncome(it) }
+                        incomeToDelete = null
+                    }
+                ) {
+                    Text("Excluir")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { incomeToDelete = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    if (expenseToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { expenseToDelete = null },
+            title = { Text("Excluir despesa") },
+            text = {
+                Text("Deseja excluir a despesa \"${expenseToDelete?.description}\"?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        expenseToDelete?.let { viewModel.deleteExpense(it) }
+                        expenseToDelete = null
+                    }
+                ) {
+                    Text("Excluir")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { expenseToDelete = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }

@@ -8,4 +8,5 @@ interface IncomeRepository {
     fun getTotalIncome(tourId: Long): Flow<Double>
     suspend fun insertIncome(income: Income): Long
     suspend fun deleteIncome(income: Income)
+    suspend fun deleteByTourAndCity(tourId: Long, cityName: String)
 }

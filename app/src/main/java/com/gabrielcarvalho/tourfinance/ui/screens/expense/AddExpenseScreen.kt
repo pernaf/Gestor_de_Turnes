@@ -21,7 +21,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -40,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gabrielcarvalho.tourfinance.domain.model.ExpenseCategory
+import com.gabrielcarvalho.tourfinance.ui.components.DateField
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -96,15 +96,17 @@ fun AddExpenseScreen(
         }
     }
 
-    val datePickerDialog = DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
-        },
-        selectedDate.year,
-        selectedDate.monthValue - 1,
-        selectedDate.dayOfMonth
-    )
+    val datePickerDialog = remember(selectedDate) {
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
+            },
+            selectedDate.year,
+            selectedDate.monthValue - 1,
+            selectedDate.dayOfMonth
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -164,17 +166,11 @@ fun AddExpenseScreen(
                 singleLine = true
             )
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text("Data")
-                OutlinedButton(
-                    onClick = { datePickerDialog.show() },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(selectedDate.format(dateFormatter))
-                }
-            }
+            DateField(
+                value = selectedDate.format(dateFormatter),
+                onClick = { datePickerDialog.show() },
+                modifier = Modifier.fillMaxWidth()
+            )
 
             OutlinedTextField(
                 value = city,

@@ -106,12 +106,19 @@ class TourViewModel @Inject constructor(
             )
         }
     }
+
     fun deleteExpense(expense: Expense) {
         viewModelScope.launch { expenseRepository.deleteExpense(expense) }
     }
 
     fun deleteIncome(income: Income) {
         viewModelScope.launch { incomeRepository.deleteIncome(income) }
+    }
+
+    fun deleteTourStop(tourStop: TourStop) {
+        viewModelScope.launch {
+            tourStopRepository.deleteStop(tourStop)
+        }
     }
 
     private var currentBandId: Long = -1L
@@ -125,9 +132,18 @@ class TourViewModel @Inject constructor(
             }
         }
     }
+
     fun deleteTour(tour: Tour) {
         viewModelScope.launch {
             tourRepository.deleteTour(tour)
+        }
+    }
+
+    fun deleteCityWithTransactions(tourStop: TourStop) {
+        viewModelScope.launch {
+            incomeRepository.deleteByTourAndCity(tourStop.tourId, tourStop.cityName)
+            expenseRepository.deleteByTourAndCity(tourStop.tourId, tourStop.cityName)
+            tourStopRepository.deleteStop(tourStop)
         }
     }
 }

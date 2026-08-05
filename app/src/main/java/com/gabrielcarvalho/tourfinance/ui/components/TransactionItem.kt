@@ -1,5 +1,6 @@
 package com.gabrielcarvalho.tourfinance.ui.components
 
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -9,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -20,22 +22,26 @@ fun TransactionItem(
     amount: Double,
     isExpense: Boolean,
     currency: String = "R$",
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    onLongClick: () -> Unit = {}
 ) {
     val amountColor = if (isExpense) {
         MaterialTheme.colorScheme.error
     } else {
         MaterialTheme.colorScheme.primary
     }
+
     val prefix = if (isExpense) "- " else "+ "
 
-
     Card(
-        onClick = onClick,
+        modifier = Modifier.combinedClickable(
+            onClick = onClick,
+            onLongClick = onLongClick
+        ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
-    ){
+    ) {
         ListItem(
             headlineContent = { Text("$emoji  $title") },
             supportingContent = {

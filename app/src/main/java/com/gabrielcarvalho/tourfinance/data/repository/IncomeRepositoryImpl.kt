@@ -26,6 +26,10 @@ class IncomeRepositoryImpl @Inject constructor(
     override suspend fun deleteIncome(income: Income) =
         dao.delete(income.toEntity())
 
+    override suspend fun deleteByTourAndCity(tourId: Long, cityName: String) {
+        dao.deleteByTourAndCity(tourId, cityName)
+    }
+
     private fun IncomeEntity.toDomain() = Income(
         id = id,
         tourId = tourId,

@@ -1,7 +1,6 @@
 package com.gabrielcarvalho.tourfinance.ui.screens.city
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,12 +9,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -45,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -52,6 +51,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gabrielcarvalho.tourfinance.domain.model.Expense
 import com.gabrielcarvalho.tourfinance.domain.model.Income
 import com.gabrielcarvalho.tourfinance.ui.components.FinanceCard
+import com.gabrielcarvalho.tourfinance.ui.components.FinanceCategoryChart
+import com.gabrielcarvalho.tourfinance.ui.components.FinanceChartItem
 import com.gabrielcarvalho.tourfinance.ui.components.TransactionItem
 import com.gabrielcarvalho.tourfinance.ui.screens.tour.TourViewModel
 import java.time.format.DateTimeFormatter
@@ -94,10 +95,60 @@ fun CityDetailScreen(
             .sortedByDescending { it.date }
     }
 
+    val groupedIncomes = remember(cityIncomes) {
+        cityIncomes.groupBy { it.type }
+            .toList()
+            .sortedByDescending { (_, incomes) -> incomes.sumOf { it.amount } }
+    }
+
+    val groupedExpenses = remember(cityExpenses) {
+        cityExpenses.groupBy { it.category }
+            .toList()
+            .sortedByDescending { (_, expenses) -> expenses.sumOf { it.amount } }
+    }
+
     val totalIncome = remember(cityIncomes) { cityIncomes.sumOf { it.amount } }
     val totalExpenses = remember(cityExpenses) { cityExpenses.sumOf { it.amount } }
     val balance = totalIncome - totalExpenses
     val totalTransactions = cityIncomes.size + cityExpenses.size
+
+    val incomeChartColor = MaterialTheme.colorScheme.primary
+    val expenseChartColor = MaterialTheme.colorScheme.error
+
+    val chartItems = remember(
+        groupedIncomes,
+        groupedExpenses,
+        incomeChartColor,
+        expenseChartColor
+    ) {
+        buildList {
+            groupedIncomes.forEach { (type, incomes) ->
+                val total = incomes.sumOf { it.amount }
+                if (total > 0.0) {
+                    add(
+                        FinanceChartItem(
+                            label = type.label,
+                            value = total.toFloat(),
+                            color = incomeChartColor
+                        )
+                    )
+                }
+            }
+
+            groupedExpenses.forEach { (category, expenses) ->
+                val total = expenses.sumOf { it.amount }
+                if (total > 0.0) {
+                    add(
+                        FinanceChartItem(
+                            label = category.label,
+                            value = total.toFloat(),
+                            color = expenseChartColor
+                        )
+                    )
+                }
+            }
+        }.sortedByDescending { it.value }.take(6)
+    }
 
     Scaffold(
         topBar = {
@@ -159,7 +210,11 @@ fun CityDetailScreen(
 
                             cityStop?.let { stop ->
                                 Text(
-                                    text = "Show em ${stop.showDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}",
+                                    text = "Show em ${
+                                        stop.showDate.format(
+                                            DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                                        )
+                                    }",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.92f)
                                 )
@@ -201,6 +256,15 @@ fun CityDetailScreen(
                         isPositive = balance >= 0,
                         modifier = Modifier.fillMaxWidth()
                     )
+                }
+
+                if (chartItems.isNotEmpty()) {
+                    item {
+                        FinanceCategoryChart(
+                            items = chartItems,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
 
                 item {
@@ -262,65 +326,79 @@ fun CityDetailScreen(
                     }
                 }
 
-                if (cityIncomes.isNotEmpty()) {
+                if (groupedIncomes.isNotEmpty()) {
                     item {
-                        SectionHeader(
-                            title = "Receitas",
+                        MainSectionHeader(
+                            title = "Receitas por categoria",
                             count = cityIncomes.size,
                             accentColor = MaterialTheme.colorScheme.primary
                         )
                     }
 
-                    items(cityIncomes, key = { "income_${it.id}" }) { income ->
-                        TransactionItem(
-                            emoji = income.type.emoji,
-                            title = income.description,
-                            subtitle = buildString {
-                                append("${income.type.emoji} ${income.type.label}")
-                                if (income.city.isNotBlank()) {
-                                    append(" • ${income.city}")
-                                }
-                                append(" • ${income.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}")
-                                if (income.notes.isNotBlank()) {
-                                    append(" • ${income.notes}")
-                                }
-                            },
-                            amount = income.amount,
-                            isExpense = false,
-                            onClick = { onEditIncome(income.id) },
-                            onLongClick = { incomeToDelete = income }
-                        )
+                    groupedIncomes.forEach { (type, incomes) ->
+                        item(key = "income_group_${type.name}") {
+                            CategoryGroupCard(
+                                title = "${type.emoji} ${type.label}",
+                                total = incomes.sumOf { it.amount },
+                                accentColor = MaterialTheme.colorScheme.primary,
+                                isExpense = false
+                            )
+                        }
+
+                        items(incomes, key = { "income_${it.id}" }) { income ->
+                            TransactionItem(
+                                emoji = income.type.emoji,
+                                title = income.description,
+                                subtitle = buildString {
+                                    append(income.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+                                    if (income.notes.isNotBlank()) {
+                                        append(" • ${income.notes}")
+                                    }
+                                },
+                                amount = income.amount,
+                                isExpense = false,
+                                onClick = { onEditIncome(income.id) },
+                                onLongClick = { incomeToDelete = income }
+                            )
+                        }
                     }
                 }
 
-                if (cityExpenses.isNotEmpty()) {
+                if (groupedExpenses.isNotEmpty()) {
                     item {
-                        SectionHeader(
-                            title = "Despesas",
+                        MainSectionHeader(
+                            title = "Despesas por categoria",
                             count = cityExpenses.size,
                             accentColor = MaterialTheme.colorScheme.error
                         )
                     }
 
-                    items(cityExpenses, key = { "expense_${it.id}" }) { expense ->
-                        TransactionItem(
-                            emoji = expense.category.emoji,
-                            title = expense.description,
-                            subtitle = buildString {
-                                append("${expense.category.emoji} ${expense.category.label}")
-                                if (expense.city.isNotBlank()) {
-                                    append(" • ${expense.city}")
-                                }
-                                append(" • ${expense.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))}")
-                                if (expense.notes.isNotBlank()) {
-                                    append(" • ${expense.notes}")
-                                }
-                            },
-                            amount = expense.amount,
-                            isExpense = true,
-                            onClick = { onEditExpense(expense.id) },
-                            onLongClick = { expenseToDelete = expense }
-                        )
+                    groupedExpenses.forEach { (category, expenses) ->
+                        item(key = "expense_group_${category.name}") {
+                            CategoryGroupCard(
+                                title = "${category.emoji} ${category.label}",
+                                total = expenses.sumOf { it.amount },
+                                accentColor = MaterialTheme.colorScheme.error,
+                                isExpense = true
+                            )
+                        }
+
+                        items(expenses, key = { "expense_${it.id}" }) { expense ->
+                            TransactionItem(
+                                emoji = expense.category.emoji,
+                                title = expense.description,
+                                subtitle = buildString {
+                                    append(expense.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+                                    if (expense.notes.isNotBlank()) {
+                                        append(" • ${expense.notes}")
+                                    }
+                                },
+                                amount = expense.amount,
+                                isExpense = true,
+                                onClick = { onEditExpense(expense.id) },
+                                onLongClick = { expenseToDelete = expense }
+                            )
+                        }
                     }
                 }
 
@@ -343,25 +421,11 @@ fun CityDetailScreen(
                                     .padding(20.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(10.dp)
-                                            .background(
-                                                color = MaterialTheme.colorScheme.primary,
-                                                shape = CircleShape
-                                            )
-                                    )
-
-                                    Text(
-                                        text = "Nenhuma movimentação ainda",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
+                                Text(
+                                    text = "Nenhuma movimentação ainda",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
 
                                 Text(
                                     text = "Adicione receitas e despesas desta cidade para acompanhar o resultado do show.",
@@ -374,7 +438,7 @@ fun CityDetailScreen(
                 }
 
                 item {
-                    Spacer(modifier = Modifier.padding(bottom = 6.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
@@ -460,10 +524,10 @@ fun CityDetailScreen(
 }
 
 @Composable
-private fun SectionHeader(
+private fun MainSectionHeader(
     title: String,
     count: Int,
-    accentColor: androidx.compose.ui.graphics.Color
+    accentColor: Color
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -491,6 +555,48 @@ private fun SectionHeader(
                 style = MaterialTheme.typography.bodySmall,
                 color = accentColor,
                 fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
+@Composable
+private fun CategoryGroupCard(
+    title: String,
+    total: Double,
+    accentColor: Color,
+    isExpense: Boolean
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(
+            width = 2.dp,
+            color = accentColor.copy(alpha = 0.35f)
+        ),
+        colors = CardDefaults.cardColors(
+            containerColor = accentColor.copy(alpha = 0.08f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = accentColor
+            )
+
+            Text(
+                text = "${if (isExpense) "- " else "+ "}R$ ${"%,.2f".format(total)}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = accentColor
             )
         }
     }

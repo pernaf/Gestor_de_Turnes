@@ -1,6 +1,7 @@
 package com.gabrielcarvalho.tourfinance.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +22,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import java.util.Locale
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TransactionItem(
     emoji: String,
@@ -53,12 +56,18 @@ fun TransactionItem(
 
     val prefix = if (isExpense) "- " else "+ "
 
+    val formattedAmount = String.format(
+        Locale.getDefault(),
+        "%,.2f",
+        amount
+    )
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
+                onClick = { onClick() },
+                onLongClick = { onLongClick() }
             ),
         shape = RoundedCornerShape(18.dp),
         border = BorderStroke(
@@ -116,7 +125,7 @@ fun TransactionItem(
             }
 
             Text(
-                text = "$prefix$currency ${"%,.2f".format(amount)}",
+                text = "$prefix$currency $formattedAmount",
                 color = amountColor,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold

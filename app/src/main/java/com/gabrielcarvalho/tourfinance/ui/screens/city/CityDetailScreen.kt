@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -48,14 +47,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.gabrielcarvalho.tourfinance.domain.model.Expense
-import com.gabrielcarvalho.tourfinance.domain.model.Income
 import com.gabrielcarvalho.tourfinance.ui.components.FinanceCard
 import com.gabrielcarvalho.tourfinance.ui.components.FinanceCategoryChart
 import com.gabrielcarvalho.tourfinance.ui.components.FinanceChartItem
-import com.gabrielcarvalho.tourfinance.ui.components.TransactionItem
 import com.gabrielcarvalho.tourfinance.ui.screens.tour.TourViewModel
 import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+private val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,8 +63,8 @@ fun CityDetailScreen(
     cityName: String,
     onAddIncome: (String) -> Unit,
     onAddExpense: (String) -> Unit,
-    onEditIncome: (Long) -> Unit,
-    onEditExpense: (Long) -> Unit,
+    onOpenIncomeCategory: (String, String) -> Unit,
+    onOpenExpenseCategory: (String, String) -> Unit,
     onNavigateBack: () -> Unit,
     viewModel: TourViewModel = hiltViewModel()
 ) {
@@ -75,12 +74,14 @@ fun CityDetailScreen(
 
     val uiState by viewModel.detailUiState.collectAsStateWithLifecycle()
 
-    var showDeleteCityDialog by remember { mutableStateOf(false) }
-    var incomeToDelete by remember { mutableStateOf<Income?>(null) }
-    var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
+    var showDeleteCityDialog by remember {
+        mutableStateOf(false)
+    }
 
     val cityStop = remember(uiState.tourStops, cityName) {
-        uiState.tourStops.firstOrNull { it.cityName.equals(cityName, ignoreCase = true) }
+        uiState.tourStops.firstOrNull {
+            it.cityName.equals(cityName, ignoreCase = true)
+        }
     }
 
     val cityIncomes = remember(uiState.incomes, cityName) {
@@ -96,19 +97,31 @@ fun CityDetailScreen(
     }
 
     val groupedIncomes = remember(cityIncomes) {
-        cityIncomes.groupBy { it.type }
+        cityIncomes
+            .groupBy { it.type }
             .toList()
-            .sortedByDescending { (_, incomes) -> incomes.sumOf { it.amount } }
+            .sortedByDescending { (_, incomes) ->
+                incomes.sumOf { it.amount }
+            }
     }
 
     val groupedExpenses = remember(cityExpenses) {
-        cityExpenses.groupBy { it.category }
+        cityExpenses
+            .groupBy { it.category }
             .toList()
-            .sortedByDescending { (_, expenses) -> expenses.sumOf { it.amount } }
+            .sortedByDescending { (_, expenses) ->
+                expenses.sumOf { it.amount }
+            }
     }
 
-    val totalIncome = remember(cityIncomes) { cityIncomes.sumOf { it.amount } }
-    val totalExpenses = remember(cityExpenses) { cityExpenses.sumOf { it.amount } }
+    val totalIncome = remember(cityIncomes) {
+        cityIncomes.sumOf { it.amount }
+    }
+
+    val totalExpenses = remember(cityExpenses) {
+        cityExpenses.sumOf { it.amount }
+    }
+
     val balance = totalIncome - totalExpenses
     val totalTransactions = cityIncomes.size + cityExpenses.size
 
@@ -124,6 +137,7 @@ fun CityDetailScreen(
         buildList {
             groupedIncomes.forEach { (type, incomes) ->
                 val total = incomes.sumOf { it.amount }
+
                 if (total > 0.0) {
                     add(
                         FinanceChartItem(
@@ -137,6 +151,7 @@ fun CityDetailScreen(
 
             groupedExpenses.forEach { (category, expenses) ->
                 val total = expenses.sumOf { it.amount }
+
                 if (total > 0.0) {
                     add(
                         FinanceChartItem(
@@ -147,13 +162,17 @@ fun CityDetailScreen(
                     )
                 }
             }
-        }.sortedByDescending { it.value }.take(6)
+        }
+            .sortedByDescending { it.value }
+            .take(6)
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(cityName) },
+                title = {
+                    Text(text = cityName)
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -165,6 +184,7 @@ fun CityDetailScreen(
             )
         }
     ) { innerPadding ->
+
         if (uiState.isLoading) {
             Box(
                 modifier = Modifier
@@ -184,6 +204,7 @@ fun CityDetailScreen(
             ) {
                 item {
                     Card(
+                        modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.primary
@@ -198,7 +219,9 @@ fun CityDetailScreen(
                             Text(
                                 text = "Visão da cidade",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                                color = MaterialTheme.colorScheme.onPrimary.copy(
+                                    alpha = 0.85f
+                                )
                             )
 
                             Text(
@@ -210,20 +233,20 @@ fun CityDetailScreen(
 
                             cityStop?.let { stop ->
                                 Text(
-                                    text = "Show em ${
-                                        stop.showDate.format(
-                                            DateTimeFormatter.ofPattern("dd/MM/yyyy")
-                                        )
-                                    }",
+                                    text = "Show em ${stop.showDate.format(dateFormatter)}",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.92f)
+                                    color = MaterialTheme.colorScheme.onPrimary.copy(
+                                        alpha = 0.92f
+                                    )
                                 )
                             }
 
                             Text(
                                 text = "$totalTransactions movimentação(ões)",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.82f)
+                                color = MaterialTheme.colorScheme.onPrimary.copy(
+                                    alpha = 0.82f
+                                )
                             )
                         }
                     }
@@ -231,8 +254,8 @@ fun CityDetailScreen(
 
                 item {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         FinanceCard(
                             title = "Receitas",
@@ -240,6 +263,7 @@ fun CityDetailScreen(
                             isPositive = true,
                             modifier = Modifier.weight(1f)
                         )
+
                         FinanceCard(
                             title = "Despesas",
                             amount = totalExpenses,
@@ -269,11 +293,13 @@ fun CityDetailScreen(
 
                 item {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Button(
-                            onClick = { onAddIncome(cityName) },
+                            onClick = {
+                                onAddIncome(cityName)
+                            },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
@@ -284,12 +310,16 @@ fun CityDetailScreen(
                                 imageVector = Icons.Default.AttachMoney,
                                 contentDescription = null
                             )
+
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("+ Receita")
+
+                            Text(text = "+ Receita")
                         }
 
                         OutlinedButton(
-                            onClick = { onAddExpense(cityName) },
+                            onClick = {
+                                onAddExpense(cityName)
+                            },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(16.dp)
                         ) {
@@ -297,20 +327,26 @@ fun CityDetailScreen(
                                 imageVector = Icons.Default.RemoveShoppingCart,
                                 contentDescription = null
                             )
+
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("+ Despesa")
+
+                            Text(text = "+ Despesa")
                         }
                     }
                 }
 
                 item {
                     OutlinedButton(
-                        onClick = { showDeleteCityDialog = true },
+                        onClick = {
+                            showDeleteCityDialog = true
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         border = BorderStroke(
-                            1.5.dp,
-                            MaterialTheme.colorScheme.error.copy(alpha = 0.45f)
+                            width = 1.5.dp,
+                            color = MaterialTheme.colorScheme.error.copy(
+                                alpha = 0.45f
+                            )
                         )
                     ) {
                         Icon(
@@ -318,7 +354,9 @@ fun CityDetailScreen(
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.error
                         )
+
                         Spacer(modifier = Modifier.width(6.dp))
+
                         Text(
                             text = "Excluir cidade",
                             color = MaterialTheme.colorScheme.error
@@ -341,24 +379,14 @@ fun CityDetailScreen(
                                 title = "${type.emoji} ${type.label}",
                                 total = incomes.sumOf { it.amount },
                                 accentColor = MaterialTheme.colorScheme.primary,
-                                isExpense = false
-                            )
-                        }
-
-                        items(incomes, key = { "income_${it.id}" }) { income ->
-                            TransactionItem(
-                                emoji = income.type.emoji,
-                                title = income.description,
-                                subtitle = buildString {
-                                    append(income.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
-                                    if (income.notes.isNotBlank()) {
-                                        append(" • ${income.notes}")
-                                    }
-                                },
-                                amount = income.amount,
                                 isExpense = false,
-                                onClick = { onEditIncome(income.id) },
-                                onLongClick = { incomeToDelete = income }
+                                itemCount = incomes.size,
+                                onClick = {
+                                    onOpenIncomeCategory(
+                                        cityName,
+                                        type.name
+                                    )
+                                }
                             )
                         }
                     }
@@ -379,24 +407,14 @@ fun CityDetailScreen(
                                 title = "${category.emoji} ${category.label}",
                                 total = expenses.sumOf { it.amount },
                                 accentColor = MaterialTheme.colorScheme.error,
-                                isExpense = true
-                            )
-                        }
-
-                        items(expenses, key = { "expense_${it.id}" }) { expense ->
-                            TransactionItem(
-                                emoji = expense.category.emoji,
-                                title = expense.description,
-                                subtitle = buildString {
-                                    append(expense.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
-                                    if (expense.notes.isNotBlank()) {
-                                        append(" • ${expense.notes}")
-                                    }
-                                },
-                                amount = expense.amount,
                                 isExpense = true,
-                                onClick = { onEditExpense(expense.id) },
-                                onLongClick = { expenseToDelete = expense }
+                                itemCount = expenses.size,
+                                onClick = {
+                                    onOpenExpenseCategory(
+                                        cityName,
+                                        category.name
+                                    )
+                                }
                             )
                         }
                     }
@@ -409,7 +427,9 @@ fun CityDetailScreen(
                             shape = RoundedCornerShape(22.dp),
                             border = BorderStroke(
                                 width = 2.dp,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                color = MaterialTheme.colorScheme.primary.copy(
+                                    alpha = 0.38f
+                                )
                             ),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surface
@@ -446,10 +466,18 @@ fun CityDetailScreen(
 
     if (showDeleteCityDialog) {
         AlertDialog(
-            onDismissRequest = { showDeleteCityDialog = false },
-            title = { Text("Excluir cidade") },
+            onDismissRequest = {
+                showDeleteCityDialog = false
+            },
+            title = {
+                Text(text = "Excluir cidade")
+            },
             text = {
-                Text("Deseja excluir \"$cityName\" da turnê? Esta ação remove a cidade e também todas as receitas e despesas vinculadas a ela.")
+                Text(
+                    text = "Deseja excluir \"$cityName\" da turnê? " +
+                            "Esta ação remove a cidade e também todas as receitas " +
+                            "e despesas vinculadas a ela."
+                )
             },
             confirmButton = {
                 TextButton(
@@ -457,66 +485,21 @@ fun CityDetailScreen(
                         cityStop?.let { stop ->
                             viewModel.deleteCityWithTransactions(stop)
                         }
+
                         showDeleteCityDialog = false
                         onNavigateBack()
                     }
                 ) {
-                    Text("Excluir")
+                    Text(text = "Excluir")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteCityDialog = false }) {
-                    Text("Cancelar")
-                }
-            }
-        )
-    }
-
-    if (incomeToDelete != null) {
-        AlertDialog(
-            onDismissRequest = { incomeToDelete = null },
-            title = { Text("Excluir receita") },
-            text = {
-                Text("Deseja excluir a receita \"${incomeToDelete?.description}\"?")
-            },
-            confirmButton = {
                 TextButton(
                     onClick = {
-                        incomeToDelete?.let { viewModel.deleteIncome(it) }
-                        incomeToDelete = null
+                        showDeleteCityDialog = false
                     }
                 ) {
-                    Text("Excluir")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { incomeToDelete = null }) {
-                    Text("Cancelar")
-                }
-            }
-        )
-    }
-
-    if (expenseToDelete != null) {
-        AlertDialog(
-            onDismissRequest = { expenseToDelete = null },
-            title = { Text("Excluir despesa") },
-            text = {
-                Text("Deseja excluir a despesa \"${expenseToDelete?.description}\"?")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        expenseToDelete?.let { viewModel.deleteExpense(it) }
-                        expenseToDelete = null
-                    }
-                ) {
-                    Text("Excluir")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { expenseToDelete = null }) {
-                    Text("Cancelar")
+                    Text(text = "Cancelar")
                 }
             }
         )
@@ -539,7 +522,10 @@ private fun MainSectionHeader(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(
+                    horizontal = 14.dp,
+                    vertical = 12.dp
+                ),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -565,9 +551,12 @@ private fun CategoryGroupCard(
     title: String,
     total: Double,
     accentColor: Color,
-    isExpense: Boolean
+    isExpense: Boolean,
+    itemCount: Int,
+    onClick: () -> Unit
 ) {
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         border = BorderStroke(
@@ -578,25 +567,49 @@ private fun CategoryGroupCard(
             containerColor = accentColor.copy(alpha = 0.08f)
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(
+                    horizontal = 14.dp,
+                    vertical = 12.dp
+                ),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = accentColor
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = accentColor
+                )
+
+                Text(
+                    text = buildString {
+                        append(if (isExpense) "- " else "+ ")
+                        append("R$ ")
+                        append(
+                            String.format(
+                                Locale.getDefault(),
+                                "%,.2f",
+                                total
+                            )
+                        )
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = accentColor
+                )
+            }
 
             Text(
-                text = "${if (isExpense) "- " else "+ "}R$ ${"%,.2f".format(total)}",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = accentColor
+                text = "$itemCount lançamento(s)",
+                style = MaterialTheme.typography.bodySmall,
+                color = accentColor.copy(alpha = 0.85f)
             )
         }
     }

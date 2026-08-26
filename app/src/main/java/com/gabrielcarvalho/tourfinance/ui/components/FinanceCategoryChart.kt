@@ -27,6 +27,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import java.util.Locale
 
 data class FinanceChartItem(
     val label: String,
@@ -43,6 +44,10 @@ fun FinanceCategoryChart(
 
     val maxValue = remember(items) {
         items.maxOfOrNull { it.value }?.takeIf { it > 0f } ?: 1f
+    }
+
+    val totalValue = remember(items) {
+        items.sumOf { it.value.toDouble() }.toFloat().takeIf { it > 0f } ?: 1f
     }
 
     Card(
@@ -80,6 +85,10 @@ fun FinanceCategoryChart(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items.forEach { item ->
+                    val percentage = remember(item.value, totalValue) {
+                        ((item.value / totalValue) * 100f).coerceAtLeast(0f)
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -102,7 +111,23 @@ fun FinanceCategoryChart(
                         }
 
                         Text(
-                            text = "R$ ${"%,.2f".format(item.value)}",
+                            text = buildString {
+                                append(
+                                    String.format(
+                                        Locale.getDefault(),
+                                        "R$ %,.2f",
+                                        item.value
+                                    )
+                                )
+                                append(" • ")
+                                append(
+                                    String.format(
+                                        Locale.getDefault(),
+                                        "%.1f%%",
+                                        percentage
+                                    )
+                                )
+                            },
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = item.color

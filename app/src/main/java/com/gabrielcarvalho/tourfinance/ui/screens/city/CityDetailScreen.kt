@@ -125,46 +125,56 @@ fun CityDetailScreen(
     val balance = totalIncome - totalExpenses
     val totalTransactions = cityIncomes.size + cityExpenses.size
 
-    val incomeChartColor = MaterialTheme.colorScheme.primary
-    val expenseChartColor = MaterialTheme.colorScheme.error
+    val incomePalette = listOf(
+        MaterialTheme.colorScheme.primary,
+        MaterialTheme.colorScheme.tertiary,
+        MaterialTheme.colorScheme.secondary,
+        Color(0xFF2A9D8F),
+        Color(0xFF4CAF50),
+        Color(0xFF219EBC)
+    )
 
-    val chartItems = remember(
-        groupedIncomes,
-        groupedExpenses,
-        incomeChartColor,
-        expenseChartColor
-    ) {
+    val expensePalette = listOf(
+        MaterialTheme.colorScheme.error,
+        Color(0xFFE76F51),
+        Color(0xFFF4A261),
+        Color(0xFFD62828),
+        Color(0xFFB56576),
+        Color(0xFF9C6644)
+    )
+
+    val chartItems = remember(groupedIncomes, groupedExpenses, incomePalette, expensePalette) {
         buildList {
-            groupedIncomes.forEach { (type, incomes) ->
+            groupedIncomes.forEachIndexed { index, (type, incomes) ->
                 val total = incomes.sumOf { it.amount }
 
                 if (total > 0.0) {
                     add(
                         FinanceChartItem(
-                            label = type.label,
+                            label = "Receita • ${type.label}",
                             value = total.toFloat(),
-                            color = incomeChartColor
+                            color = incomePalette[index % incomePalette.size]
                         )
                     )
                 }
             }
 
-            groupedExpenses.forEach { (category, expenses) ->
+            groupedExpenses.forEachIndexed { index, (category, expenses) ->
                 val total = expenses.sumOf { it.amount }
 
                 if (total > 0.0) {
                     add(
                         FinanceChartItem(
-                            label = category.label,
+                            label = "Despesa • ${category.label}",
                             value = total.toFloat(),
-                            color = expenseChartColor
+                            color = expensePalette[index % expensePalette.size]
                         )
                     )
                 }
             }
         }
             .sortedByDescending { it.value }
-            .take(6)
+            .take(8)
     }
 
     Scaffold(
@@ -219,9 +229,7 @@ fun CityDetailScreen(
                             Text(
                                 text = "Visão da cidade",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(
-                                    alpha = 0.85f
-                                )
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
                             )
 
                             Text(
@@ -235,18 +243,14 @@ fun CityDetailScreen(
                                 Text(
                                     text = "Show em ${stop.showDate.format(dateFormatter)}",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onPrimary.copy(
-                                        alpha = 0.92f
-                                    )
+                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.92f)
                                 )
                             }
 
                             Text(
                                 text = "$totalTransactions movimentação(ões)",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(
-                                    alpha = 0.82f
-                                )
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.82f)
                             )
                         }
                     }
@@ -283,6 +287,14 @@ fun CityDetailScreen(
                 }
 
                 if (chartItems.isNotEmpty()) {
+                    item {
+                        MainSectionHeader(
+                            title = "Distribuição por categoria",
+                            count = chartItems.size,
+                            accentColor = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
                     item {
                         FinanceCategoryChart(
                             items = chartItems,
@@ -344,9 +356,7 @@ fun CityDetailScreen(
                         shape = RoundedCornerShape(16.dp),
                         border = BorderStroke(
                             width = 1.5.dp,
-                            color = MaterialTheme.colorScheme.error.copy(
-                                alpha = 0.45f
-                            )
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.45f)
                         )
                     ) {
                         Icon(
@@ -382,10 +392,7 @@ fun CityDetailScreen(
                                 isExpense = false,
                                 itemCount = incomes.size,
                                 onClick = {
-                                    onOpenIncomeCategory(
-                                        cityName,
-                                        type.name
-                                    )
+                                    onOpenIncomeCategory(cityName, type.name)
                                 }
                             )
                         }
@@ -410,10 +417,7 @@ fun CityDetailScreen(
                                 isExpense = true,
                                 itemCount = expenses.size,
                                 onClick = {
-                                    onOpenExpenseCategory(
-                                        cityName,
-                                        category.name
-                                    )
+                                    onOpenExpenseCategory(cityName, category.name)
                                 }
                             )
                         }
@@ -427,9 +431,7 @@ fun CityDetailScreen(
                             shape = RoundedCornerShape(22.dp),
                             border = BorderStroke(
                                 width = 2.dp,
-                                color = MaterialTheme.colorScheme.primary.copy(
-                                    alpha = 0.38f
-                                )
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                             ),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surface
@@ -522,10 +524,7 @@ private fun MainSectionHeader(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(
-                    horizontal = 14.dp,
-                    vertical = 12.dp
-                ),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -570,10 +569,7 @@ private fun CategoryGroupCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(
-                    horizontal = 14.dp,
-                    vertical = 12.dp
-                ),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Row(

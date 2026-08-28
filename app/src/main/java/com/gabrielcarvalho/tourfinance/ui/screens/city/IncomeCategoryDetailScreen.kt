@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,16 +20,20 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gabrielcarvalho.tourfinance.domain.model.Income
 import com.gabrielcarvalho.tourfinance.domain.model.IncomeType
 import com.gabrielcarvalho.tourfinance.ui.components.TransactionItem
 import com.gabrielcarvalho.tourfinance.ui.screens.tour.TourViewModel
@@ -52,6 +57,10 @@ fun IncomeCategoryDetailScreen(
     }
 
     val uiState by viewModel.detailUiState.collectAsStateWithLifecycle()
+
+    var incomeToDelete by remember {
+        mutableStateOf<Income?>(null)
+    }
 
     val incomeType = remember(typeName) {
         IncomeType.entries.firstOrNull { it.name == typeName }
@@ -155,10 +164,47 @@ fun IncomeCategoryDetailScreen(
                     isExpense = false,
                     onClick = {
                         onEditIncome(income.id)
+                    },
+                    onLongClick = {
+                        incomeToDelete = income
                     }
                 )
             }
         }
     }
-}
 
+    incomeToDelete?.let { selectedIncome ->
+        AlertDialog(
+            onDismissRequest = {
+                incomeToDelete = null
+            },
+            title = {
+                Text(text = "Excluir receita")
+            },
+            text = {
+                Text(
+                    text = "Deseja excluir a receita \"${selectedIncome.description}\"?"
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteIncome(selectedIncome.id)
+                        incomeToDelete = null
+                    }
+                ) {
+                    Text(text = "Excluir")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        incomeToDelete = null
+                    }
+                ) {
+                    Text(text = "Cancelar")
+                }
+            }
+        )
+    }
+}

@@ -52,6 +52,8 @@ class TourViewModel @Inject constructor(
     private val _detailUiState = MutableStateFlow(TourDetailUiState())
     val detailUiState: StateFlow<TourDetailUiState> = _detailUiState.asStateFlow()
 
+    private var currentBandId: Long = -1L
+
     fun loadTourDetail(tourId: Long) {
         _detailUiState.update { it.copy(isLoading = true) }
 
@@ -82,7 +84,13 @@ class TourViewModel @Inject constructor(
         }
     }
 
-    fun createTour(bandId: Long, name: String, startDate: LocalDate, endDate: LocalDate?, notes: String) {
+    fun createTour(
+        bandId: Long,
+        name: String,
+        startDate: LocalDate,
+        endDate: LocalDate?,
+        notes: String
+    ) {
         viewModelScope.launch {
             tourRepository.insertTour(
                 Tour(
@@ -108,11 +116,31 @@ class TourViewModel @Inject constructor(
     }
 
     fun deleteExpense(expense: Expense) {
-        viewModelScope.launch { expenseRepository.deleteExpense(expense) }
+        viewModelScope.launch {
+            expenseRepository.deleteExpense(expense)
+        }
+    }
+
+    fun deleteExpense(expenseId: Long) {
+        val expense = detailUiState.value.expenses.firstOrNull { it.id == expenseId } ?: return
+
+        viewModelScope.launch {
+            expenseRepository.deleteExpense(expense)
+        }
     }
 
     fun deleteIncome(income: Income) {
-        viewModelScope.launch { incomeRepository.deleteIncome(income) }
+        viewModelScope.launch {
+            incomeRepository.deleteIncome(income)
+        }
+    }
+
+    fun deleteIncome(incomeId: Long) {
+        val income = detailUiState.value.incomes.firstOrNull { it.id == incomeId } ?: return
+
+        viewModelScope.launch {
+            incomeRepository.deleteIncome(income)
+        }
     }
 
     fun deleteTourStop(tourStop: TourStop) {
@@ -121,11 +149,10 @@ class TourViewModel @Inject constructor(
         }
     }
 
-    private var currentBandId: Long = -1L
-
     fun loadToursByBand(bandId: Long) {
         if (currentBandId == bandId) return
         currentBandId = bandId
+
         viewModelScope.launch {
             tourRepository.getToursByBand(bandId).collect { tours ->
                 _listUiState.update { it.copy(tours = tours, isLoading = false) }

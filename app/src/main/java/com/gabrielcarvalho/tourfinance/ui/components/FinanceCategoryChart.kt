@@ -25,8 +25,12 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import java.text.NumberFormat
 import java.util.Locale
 
 data class FinanceChartItem(
@@ -34,6 +38,8 @@ data class FinanceChartItem(
     val value: Float,
     val color: Color
 )
+
+private val brazilLocale = Locale("pt", "BR")
 
 @Composable
 fun FinanceCategoryChart(
@@ -48,6 +54,10 @@ fun FinanceCategoryChart(
 
     val totalValue = remember(items) {
         items.sumOf { it.value.toDouble() }.toFloat().takeIf { it > 0f } ?: 1f
+    }
+
+    val currencyFormatter = remember {
+        NumberFormat.getCurrencyInstance(brazilLocale)
     }
 
     Card(
@@ -76,9 +86,10 @@ fun FinanceCategoryChart(
             SimpleBarChart(
                 items = items,
                 maxValue = maxValue,
+                totalValue = totalValue,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(220.dp)
+                    .height(252.dp)
             )
 
             Column(
@@ -112,17 +123,11 @@ fun FinanceCategoryChart(
 
                         Text(
                             text = buildString {
-                                append(
-                                    String.format(
-                                        Locale.getDefault(),
-                                        "R$ %,.2f",
-                                        item.value
-                                    )
-                                )
+                                append(currencyFormatter.format(item.value.toDouble()))
                                 append(" • ")
                                 append(
                                     String.format(
-                                        Locale.getDefault(),
+                                        brazilLocale,
                                         "%.1f%%",
                                         percentage
                                     )
@@ -143,25 +148,62 @@ fun FinanceCategoryChart(
 private fun SimpleBarChart(
     items: List<FinanceChartItem>,
     maxValue: Float,
+    totalValue: Float,
     modifier: Modifier = Modifier
 ) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val textColor = MaterialTheme.colorScheme.onSurface
+
+    val percentageTextSizePx = with(density) { 11.sp.toPx() }
+    val topPaddingPx = with(density) { 34.dp.toPx() }
+    val bottomPaddingPx = with(density) { 24.dp.toPx() }
+    val labelGapPx = with(density) { 8.dp.toPx() }
+    val minBarWidthPx = with(density) { 18.dp.toPx() }
+    val spacingPx = with(density) { 16.dp.toPx() }
+
     Canvas(modifier = modifier) {
-        val spacing = 20f
-        val bottomPadding = 24f
-        val usableHeight = size.height - bottomPadding
-        val totalSpacing = spacing * (items.size + 1)
-        val barWidth = ((size.width - totalSpacing) / items.size).coerceAtLeast(18f)
+        val usableHeight = size.height - topPaddingPx - bottomPaddingPx
+        val totalSpacing = spacingPx * (items.size + 1)
+        val barWidth = ((size.width - totalSpacing) / items.size).coerceAtLeast(minBarWidthPx)
+
+        val textPaint = android.graphics.Paint().apply {
+            isAntiAlias = true
+            color = textColor.toArgb()
+            textAlign = android.graphics.Paint.Align.CENTER
+            textSize = percentageTextSizePx
+            typeface = android.graphics.Typeface.create(
+                android.graphics.Typeface.DEFAULT,
+                android.graphics.Typeface.BOLD
+            )
+        }
+
+        val textHeight = textPaint.fontMetrics.run { bottom - top }
 
         items.forEachIndexed { index, item ->
-            val left = spacing + index * (barWidth + spacing)
+            val left = spacingPx + index * (barWidth + spacingPx)
             val barHeight = (item.value / maxValue) * usableHeight
-            val top = usableHeight - barHeight
+            val top = topPaddingPx + (usableHeight - barHeight)
+            val centerX = left + (barWidth / 2f)
+
+            val percentage = ((item.value / totalValue) * 100f).coerceAtLeast(0f)
+            val percentageLabel = String.format(brazilLocale, "%.1f%%", percentage)
+
+            val safeTextBaseline = top - labelGapPx
+            val minAllowedBaseline = textHeight
+            val textY = safeTextBaseline.coerceAtLeast(minAllowedBaseline)
 
             drawRoundRect(
                 color = item.color,
                 topLeft = Offset(left, top),
                 size = Size(barWidth, barHeight),
                 cornerRadius = CornerRadius(18f, 18f)
+            )
+
+            drawContext.canvas.nativeCanvas.drawText(
+                percentageLabel,
+                centerX,
+                textY,
+                textPaint
             )
         }
     }

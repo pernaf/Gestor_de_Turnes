@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import java.text.NumberFormat
 import java.util.Locale
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -34,7 +35,7 @@ fun TransactionItem(
     isExpense: Boolean,
     currency: String = "R$",
     onClick: () -> Unit = {},
-    onLongClick: () -> Unit = {}
+    onLongClick: (() -> Unit)? = null
 ) {
     val amountColor = if (isExpense) {
         MaterialTheme.colorScheme.error
@@ -56,18 +57,24 @@ fun TransactionItem(
 
     val prefix = if (isExpense) "- " else "+ "
 
-    val formattedAmount = String.format(
-        Locale.getDefault(),
-        "%,.2f",
-        amount
-    )
+    val formatter = NumberFormat.getNumberInstance(Locale("pt", "BR")).apply {
+        minimumFractionDigits = 2
+        maximumFractionDigits = 2
+    }
+
+    val formattedAmount = formatter.format(amount)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = { onClick() },
-                onLongClick = { onLongClick() }
+                onClick = onClick,
+                onLongClick = onLongClick,
+                onLongClickLabel = if (onLongClick != null) {
+                    if (isExpense) "Excluir despesa" else "Excluir receita"
+                } else {
+                    null
+                }
             ),
         shape = RoundedCornerShape(18.dp),
         border = BorderStroke(

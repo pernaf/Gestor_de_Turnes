@@ -152,8 +152,8 @@ fun AddExpenseScreen(
 
             OutlinedTextField(
                 value = amountText,
-                onValueChange = {
-                    amountText = it
+                onValueChange = { newValue ->
+                    amountText = MoneyInputUtils.sanitizeMoneyInput(newValue)
                     amountError = false
                 },
                 label = { Text("Valor (R$)") },

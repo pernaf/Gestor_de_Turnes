@@ -6,6 +6,48 @@ import java.util.Locale
 
 object MoneyInputUtils {
 
+    fun sanitizeMoneyInput(input: String): String {
+        if (input.isBlank()) return ""
+
+        val cleaned = input
+            .replace("R$", "", ignoreCase = true)
+            .replace("\\s+".toRegex(), "")
+            .replace("[^\\d,\\.]".toRegex(), "")
+
+        if (cleaned.isBlank()) return ""
+
+        val lastComma = cleaned.lastIndexOf(',')
+        val lastDot = cleaned.lastIndexOf('.')
+        val decimalSeparatorIndex = maxOf(lastComma, lastDot)
+
+        return if (decimalSeparatorIndex >= 0) {
+            val integerPart = cleaned
+                .substring(0, decimalSeparatorIndex)
+                .replace(",", "")
+                .replace(".", "")
+                .trimStart('0')
+                .ifBlank { "0" }
+
+            val decimalPart = cleaned
+                .substring(decimalSeparatorIndex + 1)
+                .replace(",", "")
+                .replace(".", "")
+                .take(2)
+
+            if (decimalPart.isNotEmpty()) {
+                "$integerPart,$decimalPart"
+            } else {
+                "$integerPart,"
+            }
+        } else {
+            cleaned
+                .replace(",", "")
+                .replace(".", "")
+                .trimStart('0')
+                .ifBlank { "0" }
+        }
+    }
+
     fun parseMoneyValue(text: String): Double? {
         val cleaned = text
             .trim()

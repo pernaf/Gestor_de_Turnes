@@ -39,6 +39,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gabrielcarvalho.tourfinance.domain.model.IncomeType
 import com.gabrielcarvalho.tourfinance.ui.components.DateField
+import com.gabrielcarvalho.tourfinance.ui.utils.MoneyInputUtils
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -74,15 +75,15 @@ fun AddIncomeScreen(
         }
     }
 
-    LaunchedEffect(incomeToEdit) {
+    LaunchedEffect(incomeToEdit, isEditing, fieldsLoaded) {
         if (isEditing && !fieldsLoaded && incomeToEdit != null) {
-            incomeToEdit?.let { i ->
-                description = i.description
-                amountText = i.amount.toString()
-                city = i.city
-                notes = i.notes
-                selectedType = i.type
-                selectedDate = i.date
+            incomeToEdit?.let { income ->
+                description = income.description
+                amountText = MoneyInputUtils.formatMoneyForInput(income.amount)
+                city = income.city
+                notes = income.notes
+                selectedType = income.type
+                selectedDate = income.date
                 fieldsLoaded = true
             }
         }
@@ -206,26 +207,25 @@ fun AddIncomeScreen(
 
             Button(
                 onClick = {
-                    val amount = amountText
-                        .replace(".", "")
-                        .replace(",", ".")
-                        .toDoubleOrNull()
-
                     descError = description.isBlank()
-                    amountError = amount == null || amount <= 0
 
-                    if (!descError && !amountError) {
-                        viewModel.saveIncome(
-                            tourId = tourId,
-                            incomeId = if (isEditing) incomeId else 0L,
-                            description = description.trim(),
-                            amount = amount!!,
-                            date = selectedDate,
-                            type = selectedType,
-                            city = city.trim(),
-                            notes = notes.trim()
-                        )
-                    }
+                    val parsedAmount = MoneyInputUtils.parseMoneyValue(amountText)
+                    amountError = parsedAmount == null || parsedAmount <= 0
+
+                    if (descError || amountError) return@Button
+
+                    val safeAmount = parsedAmount ?: return@Button
+
+                    viewModel.saveIncome(
+                        tourId = tourId,
+                        incomeId = if (isEditing) incomeId else 0L,
+                        description = description.trim(),
+                        amount = safeAmount,
+                        date = selectedDate,
+                        type = selectedType,
+                        city = city.trim(),
+                        notes = notes.trim()
+                    )
                 },
                 modifier = Modifier
                     .fillMaxWidth()

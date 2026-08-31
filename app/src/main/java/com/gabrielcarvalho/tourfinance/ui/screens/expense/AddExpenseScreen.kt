@@ -40,6 +40,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gabrielcarvalho.tourfinance.domain.model.ExpenseCategory
 import com.gabrielcarvalho.tourfinance.ui.components.DateField
+import com.gabrielcarvalho.tourfinance.ui.utils.MoneyInputUtils
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -75,15 +76,15 @@ fun AddExpenseScreen(
         }
     }
 
-    LaunchedEffect(expenseToEdit) {
+    LaunchedEffect(expenseToEdit, isEditing, fieldsLoaded) {
         if (isEditing && !fieldsLoaded && expenseToEdit != null) {
-            expenseToEdit?.let { e ->
-                description = e.description
-                amountText = e.amount.toString()
-                selectedCat = e.category
-                selectedDate = e.date
-                notes = e.notes
-                city = e.city
+            expenseToEdit?.let { expense ->
+                description = expense.description
+                amountText = MoneyInputUtils.formatMoneyForInput(expense.amount)
+                selectedCat = expense.category
+                selectedDate = expense.date
+                notes = expense.notes
+                city = expense.city
                 fieldsLoaded = true
             }
         }
@@ -210,26 +211,25 @@ fun AddExpenseScreen(
 
             Button(
                 onClick = {
-                    val amount = amountText
-                        .replace(".", "")
-                        .replace(",", ".")
-                        .toDoubleOrNull()
-
                     descError = description.isBlank()
-                    amountError = amount == null || amount <= 0
 
-                    if (!descError && !amountError) {
-                        viewModel.saveExpense(
-                            tourId = tourId,
-                            expenseId = expenseId ?: 0L,
-                            description = description.trim(),
-                            amount = amount!!,
-                            date = selectedDate,
-                            category = selectedCat,
-                            notes = notes.trim(),
-                            city = city.trim()
-                        )
-                    }
+                    val parsedAmount = MoneyInputUtils.parseMoneyValue(amountText)
+                    amountError = parsedAmount == null || parsedAmount <= 0
+
+                    if (descError || amountError) return@Button
+
+                    val safeAmount = parsedAmount ?: return@Button
+
+                    viewModel.saveExpense(
+                        tourId = tourId,
+                        expenseId = expenseId ?: 0L,
+                        description = description.trim(),
+                        amount = safeAmount,
+                        date = selectedDate,
+                        category = selectedCat,
+                        notes = notes.trim(),
+                        city = city.trim()
+                    )
                 },
                 modifier = Modifier
                     .fillMaxWidth()

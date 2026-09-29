@@ -6,6 +6,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.gabrielcarvalho.tourfinance.data.local.AppDatabase
 import com.gabrielcarvalho.tourfinance.data.local.dao.BandDao
+import com.gabrielcarvalho.tourfinance.data.local.dao.CityDeletionDao
 import com.gabrielcarvalho.tourfinance.data.local.dao.ExpenseDao
 import com.gabrielcarvalho.tourfinance.data.local.dao.IncomeDao
 import com.gabrielcarvalho.tourfinance.data.local.dao.TourDao
@@ -113,4 +114,7 @@ object AppModule {
     fun provideTourStopRepository(dao: TourStopDao): TourStopRepository {
         return TourStopRepositoryImpl(dao)
     }
+
+    @Provides
+    fun provideCityDeletionDao(db: AppDatabase): CityDeletionDao = db.cityDeletionDao()
 }

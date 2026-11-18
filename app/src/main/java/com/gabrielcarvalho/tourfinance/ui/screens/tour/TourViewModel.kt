@@ -7,11 +7,13 @@ import com.gabrielcarvalho.tourfinance.domain.model.Income
 import com.gabrielcarvalho.tourfinance.domain.model.Tour
 import com.gabrielcarvalho.tourfinance.domain.model.TourStatus
 import com.gabrielcarvalho.tourfinance.domain.model.TourStop
+import com.gabrielcarvalho.tourfinance.domain.model.repository.CityDeletionRepository
 import com.gabrielcarvalho.tourfinance.domain.model.repository.ExpenseRepository
 import com.gabrielcarvalho.tourfinance.domain.model.repository.IncomeRepository
 import com.gabrielcarvalho.tourfinance.domain.model.repository.TourRepository
 import com.gabrielcarvalho.tourfinance.domain.model.repository.TourStopRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,12 +40,21 @@ data class TourDetailUiState(
     val balance: Double get() = totalIncome - totalExpenses
 }
 
+private data class TourDetailData(
+    val totalIncome: Double,
+    val totalExpenses: Double,
+    val incomes: List<Income>,
+    val expenses: List<Expense>,
+    val tourStops: List<TourStop>
+)
+
 @HiltViewModel
 class TourViewModel @Inject constructor(
     private val tourRepository: TourRepository,
     private val expenseRepository: ExpenseRepository,
     private val incomeRepository: IncomeRepository,
-    private val tourStopRepository: TourStopRepository
+    private val tourStopRepository: TourStopRepository,
+    private val cityDeletionRepository: CityDeletionRepository
 ) : ViewModel() {
 
     private val _listUiState = MutableStateFlow(TourListUiState())
@@ -53,16 +64,25 @@ class TourViewModel @Inject constructor(
     val detailUiState: StateFlow<TourDetailUiState> = _detailUiState.asStateFlow()
 
     private var currentBandId: Long = -1L
+    private var tourDetailJob: Job? = null
+    private var tourHeaderJob: Job? = null
+    private var toursByBandJob: Job? = null
 
     fun loadTourDetail(tourId: Long) {
-        _detailUiState.update { it.copy(isLoading = true) }
-
-        viewModelScope.launch {
-            val tour = tourRepository.getTourById(tourId)
-            _detailUiState.update { it.copy(tour = tour) }
+        _detailUiState.update { currentState ->
+            currentState.copy(isLoading = true)
         }
 
-        viewModelScope.launch {
+        tourHeaderJob?.cancel()
+        tourHeaderJob = viewModelScope.launch {
+            val tour = tourRepository.getTourById(tourId)
+            _detailUiState.update { currentState ->
+                currentState.copy(tour = tour)
+            }
+        }
+
+        tourDetailJob?.cancel()
+        tourDetailJob = viewModelScope.launch {
             combine(
                 incomeRepository.getTotalIncome(tourId),
                 expenseRepository.getTotalExpenses(tourId),
@@ -70,17 +90,25 @@ class TourViewModel @Inject constructor(
                 expenseRepository.getExpensesByTour(tourId),
                 tourStopRepository.getStopsByTour(tourId)
             ) { totalIncome, totalExpenses, incomes, expenses, tourStops ->
-                _detailUiState.update {
-                    it.copy(
-                        totalIncome = totalIncome,
-                        totalExpenses = totalExpenses,
-                        incomes = incomes,
-                        expenses = expenses,
-                        tourStops = tourStops,
+                TourDetailData(
+                    totalIncome = totalIncome,
+                    totalExpenses = totalExpenses,
+                    incomes = incomes,
+                    expenses = expenses,
+                    tourStops = tourStops
+                )
+            }.collect { data ->
+                _detailUiState.update { currentState ->
+                    currentState.copy(
+                        totalIncome = data.totalIncome,
+                        totalExpenses = data.totalExpenses,
+                        incomes = data.incomes,
+                        expenses = data.expenses,
+                        tourStops = data.tourStops,
                         isLoading = false
                     )
                 }
-            }.collect {}
+            }
         }
     }
 
@@ -150,12 +178,22 @@ class TourViewModel @Inject constructor(
     }
 
     fun loadToursByBand(bandId: Long) {
-        if (currentBandId == bandId) return
-        currentBandId = bandId
+        if (currentBandId == bandId && toursByBandJob?.isActive == true) return
 
-        viewModelScope.launch {
+        currentBandId = bandId
+        _listUiState.update { currentState ->
+            currentState.copy(isLoading = true)
+        }
+
+        toursByBandJob?.cancel()
+        toursByBandJob = viewModelScope.launch {
             tourRepository.getToursByBand(bandId).collect { tours ->
-                _listUiState.update { it.copy(tours = tours, isLoading = false) }
+                _listUiState.update { currentState ->
+                    currentState.copy(
+                        tours = tours,
+                        isLoading = false
+                    )
+                }
             }
         }
     }
@@ -168,9 +206,11 @@ class TourViewModel @Inject constructor(
 
     fun deleteCityWithTransactions(tourStop: TourStop) {
         viewModelScope.launch {
-            incomeRepository.deleteByTourAndCity(tourStop.tourId, tourStop.cityName)
-            expenseRepository.deleteByTourAndCity(tourStop.tourId, tourStop.cityName)
-            tourStopRepository.deleteStop(tourStop)
+            cityDeletionRepository.deleteCityWithTransactions(
+                stopId = tourStop.id,
+                tourId = tourStop.tourId,
+                cityName = tourStop.cityName
+            )
         }
     }
 }

@@ -6,6 +6,7 @@ import com.gabrielcarvalho.tourfinance.domain.model.Expense
 import com.gabrielcarvalho.tourfinance.domain.model.ExpenseCategory
 import com.gabrielcarvalho.tourfinance.domain.model.repository.ExpenseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,8 +25,11 @@ class ExpenseViewModel @Inject constructor(
     private val _savedSuccessfully = MutableStateFlow(false)
     val savedSuccessfully: StateFlow<Boolean> = _savedSuccessfully.asStateFlow()
 
+    private var loadExpenseJob: Job? = null
+
     fun loadExpense(expenseId: Long, tourId: Long) {
-        viewModelScope.launch {
+        loadExpenseJob?.cancel()
+        loadExpenseJob = viewModelScope.launch {
             repository.getExpensesByTour(tourId).collect { list ->
                 _expenseToEdit.value = list.find { it.id == expenseId }
             }

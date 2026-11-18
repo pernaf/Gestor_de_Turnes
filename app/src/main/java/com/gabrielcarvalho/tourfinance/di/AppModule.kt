@@ -12,11 +12,13 @@ import com.gabrielcarvalho.tourfinance.data.local.dao.IncomeDao
 import com.gabrielcarvalho.tourfinance.data.local.dao.TourDao
 import com.gabrielcarvalho.tourfinance.data.local.dao.TourStopDao
 import com.gabrielcarvalho.tourfinance.data.repository.BandRepositoryImpl
+import com.gabrielcarvalho.tourfinance.data.repository.CityDeletionRepositoryImpl
 import com.gabrielcarvalho.tourfinance.data.repository.ExpenseRepositoryImpl
 import com.gabrielcarvalho.tourfinance.data.repository.IncomeRepositoryImpl
 import com.gabrielcarvalho.tourfinance.data.repository.TourRepositoryImpl
 import com.gabrielcarvalho.tourfinance.data.repository.TourStopRepositoryImpl
 import com.gabrielcarvalho.tourfinance.domain.model.repository.BandRepository
+import com.gabrielcarvalho.tourfinance.domain.model.repository.CityDeletionRepository
 import com.gabrielcarvalho.tourfinance.domain.model.repository.ExpenseRepository
 import com.gabrielcarvalho.tourfinance.domain.model.repository.IncomeRepository
 import com.gabrielcarvalho.tourfinance.domain.model.repository.TourRepository
@@ -87,6 +89,15 @@ object AppModule {
     fun provideIncomeDao(db: AppDatabase): IncomeDao = db.incomeDao()
 
     @Provides
+    fun provideBandDao(db: AppDatabase): BandDao = db.bandDao()
+
+    @Provides
+    fun provideTourStopDao(db: AppDatabase): TourStopDao = db.tourStopDao()
+
+    @Provides
+    fun provideCityDeletionDao(db: AppDatabase): CityDeletionDao = db.cityDeletionDao()
+
+    @Provides
     @Singleton
     fun provideTourRepository(impl: TourRepositoryImpl): TourRepository = impl
 
@@ -99,22 +110,16 @@ object AppModule {
     fun provideIncomeRepository(impl: IncomeRepositoryImpl): IncomeRepository = impl
 
     @Provides
-    fun provideBandDao(db: AppDatabase): BandDao = db.bandDao()
-
-    @Provides
     @Singleton
     fun provideBandRepository(impl: BandRepositoryImpl): BandRepository = impl
 
     @Provides
-    fun provideTourStopDao(database: AppDatabase): TourStopDao {
-        return database.tourStopDao()
-    }
+    @Singleton
+    fun provideTourStopRepository(impl: TourStopRepositoryImpl): TourStopRepository = impl
 
     @Provides
-    fun provideTourStopRepository(dao: TourStopDao): TourStopRepository {
-        return TourStopRepositoryImpl(dao)
-    }
-
-    @Provides
-    fun provideCityDeletionDao(db: AppDatabase): CityDeletionDao = db.cityDeletionDao()
+    @Singleton
+    fun provideCityDeletionRepository(
+        impl: CityDeletionRepositoryImpl
+    ): CityDeletionRepository = impl
 }

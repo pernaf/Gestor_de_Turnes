@@ -6,6 +6,7 @@ import com.gabrielcarvalho.tourfinance.domain.model.Income
 import com.gabrielcarvalho.tourfinance.domain.model.IncomeType
 import com.gabrielcarvalho.tourfinance.domain.model.repository.IncomeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,8 +25,11 @@ class IncomeViewModel @Inject constructor(
     private val _savedSuccessfully = MutableStateFlow(false)
     val savedSuccessfully: StateFlow<Boolean> = _savedSuccessfully.asStateFlow()
 
+    private var loadIncomeJob: Job? = null
+
     fun loadIncome(incomeId: Long, tourId: Long) {
-        viewModelScope.launch {
+        loadIncomeJob?.cancel()
+        loadIncomeJob = viewModelScope.launch {
             repository.getIncomesByTour(tourId).collect { list ->
                 _incomeToEdit.value = list.find { it.id == incomeId }
             }

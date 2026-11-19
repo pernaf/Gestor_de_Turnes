@@ -10,28 +10,61 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
+
+data class ExpenseEditUiState(
+    val expense: Expense? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
 
 @HiltViewModel
 class ExpenseViewModel @Inject constructor(
     private val repository: ExpenseRepository
 ) : ViewModel() {
 
-    private val _expenseToEdit = MutableStateFlow<Expense?>(null)
-    val expenseToEdit: StateFlow<Expense?> = _expenseToEdit.asStateFlow()
+    private val _editUiState = MutableStateFlow(ExpenseEditUiState())
+    val editUiState: StateFlow<ExpenseEditUiState> = _editUiState.asStateFlow()
 
     private val _savedSuccessfully = MutableStateFlow(false)
     val savedSuccessfully: StateFlow<Boolean> = _savedSuccessfully.asStateFlow()
 
     private var loadExpenseJob: Job? = null
 
-    fun loadExpense(expenseId: Long, tourId: Long) {
+    fun loadExpense(
+        expenseId: Long,
+        tourId: Long
+    ) {
+        _editUiState.update { currentState ->
+            currentState.copy(
+                isLoading = true,
+                error = null
+            )
+        }
+
         loadExpenseJob?.cancel()
         loadExpenseJob = viewModelScope.launch {
-            repository.getExpensesByTour(tourId).collect { list ->
-                _expenseToEdit.value = list.find { it.id == expenseId }
+            repository.getExpenseById(expenseId).collect { expense ->
+                if (expense == null) {
+                    _editUiState.update { currentState ->
+                        currentState.copy(
+                            expense = null,
+                            isLoading = false,
+                            error = "Despesa não encontrada."
+                        )
+                    }
+                } else {
+                    _editUiState.update { currentState ->
+                        currentState.copy(
+                            expense = expense,
+                            isLoading = false,
+                            error = null
+                        )
+                    }
+                }
             }
         }
     }
@@ -74,5 +107,9 @@ class ExpenseViewModel @Inject constructor(
 
     fun resetSaveState() {
         _savedSuccessfully.value = false
+    }
+
+    fun clearEditState() {
+        _editUiState.value = ExpenseEditUiState()
     }
 }

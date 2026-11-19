@@ -3,8 +3,6 @@ package com.gabrielcarvalho.tourfinance.ui.screens.expense
 import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,20 +11,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,56 +36,97 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gabrielcarvalho.tourfinance.domain.model.ExpenseCategory
-import com.gabrielcarvalho.tourfinance.ui.components.DateField
 import com.gabrielcarvalho.tourfinance.ui.utils.MoneyInputUtils
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExpenseScreen(
     tourId: Long,
-    expenseId: Long? = null,
-    preselectedCity: String = "",
     onNavigateBack: () -> Unit,
+    expenseId: Long = 0L,
+    preselectedCity: String = "",
     viewModel: ExpenseViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val isEditing = expenseId != null
-    val expenseToEdit by viewModel.expenseToEdit.collectAsStateWithLifecycle()
-    val savedSuccessfully by viewModel.savedSuccessfully.collectAsStateWithLifecycle()
+    val editState by viewModel.editUiState.collectAsState()
+    val savedSuccessfully by viewModel.savedSuccessfully.collectAsState()
 
-    var description by rememberSaveable { mutableStateOf("") }
-    var amountText by rememberSaveable { mutableStateOf("") }
-    var selectedCat by rememberSaveable { mutableStateOf(ExpenseCategory.OTHER) }
-    var selectedDate by rememberSaveable { mutableStateOf(LocalDate.now()) }
-    var notes by rememberSaveable { mutableStateOf("") }
-    var descError by rememberSaveable { mutableStateOf(false) }
-    var amountError by rememberSaveable { mutableStateOf(false) }
-    var fieldsLoaded by rememberSaveable { mutableStateOf(false) }
-    var city by rememberSaveable { mutableStateOf(preselectedCity) }
+    val isEditing = expenseId > 0L
+    val dateFormatter = remember {
+        DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    }
 
-    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
+    var description by rememberSaveable(tourId, expenseId) {
+        mutableStateOf("")
+    }
+    var amountText by rememberSaveable(tourId, expenseId) {
+        mutableStateOf("")
+    }
+    var selectedDateText by rememberSaveable(tourId, expenseId) {
+        mutableStateOf(LocalDate.now().toString())
+    }
+    var categoryName by rememberSaveable(tourId, expenseId) {
+        mutableStateOf(ExpenseCategory.OTHER.name)
+    }
+    var cityText by rememberSaveable(tourId, expenseId, preselectedCity) {
+        mutableStateOf(preselectedCity)
+    }
+    var notes by rememberSaveable(tourId, expenseId) {
+        mutableStateOf("")
+    }
+    var initialized by rememberSaveable(tourId, expenseId) {
+        mutableStateOf(false)
+    }
+    var descriptionError by rememberSaveable(tourId, expenseId) {
+        mutableStateOf(false)
+    }
+    var amountError by rememberSaveable(tourId, expenseId) {
+        mutableStateOf(false)
+    }
+    var saveRequested by rememberSaveable(tourId, expenseId) {
+        mutableStateOf(false)
+    }
+    var categoryMenuExpanded by remember {
+        mutableStateOf(false)
+    }
 
-    LaunchedEffect(expenseId) {
-        if (isEditing && expenseId != null) {
-            viewModel.loadExpense(expenseId, tourId)
+    val selectedDate = LocalDate.parse(selectedDateText)
+    val selectedCategory = ExpenseCategory.valueOf(categoryName)
+    val canEdit = !saveRequested && (!isEditing || initialized)
+
+    LaunchedEffect(tourId, expenseId) {
+        viewModel.resetSaveState()
+
+        if (isEditing) {
+            viewModel.loadExpense(
+                expenseId = expenseId,
+                tourId = tourId
+            )
+        } else {
+            viewModel.clearEditState()
         }
     }
 
-    LaunchedEffect(expenseToEdit, isEditing, fieldsLoaded) {
-        if (isEditing && !fieldsLoaded && expenseToEdit != null) {
-            expenseToEdit?.let { expense ->
-                description = expense.description
-                amountText = MoneyInputUtils.formatMoneyForInput(expense.amount)
-                selectedCat = expense.category
-                selectedDate = expense.date
-                notes = expense.notes
-                city = expense.city
-                fieldsLoaded = true
-            }
+    LaunchedEffect(editState.expense, tourId, expenseId) {
+        val expense = editState.expense
+
+        if (
+            isEditing &&
+            !initialized &&
+            expense != null &&
+            expense.id == expenseId &&
+            expense.tourId == tourId
+        ) {
+            description = expense.description
+            amountText = MoneyInputUtils.formatMoneyForInput(expense.amount)
+            selectedDateText = expense.date.toString()
+            categoryName = expense.category.name
+            cityText = expense.city
+            notes = expense.notes
+            initialized = true
         }
     }
 
@@ -97,148 +137,191 @@ fun AddExpenseScreen(
         }
     }
 
-    val datePickerDialog = remember(selectedDate) {
-        DatePickerDialog(
-            context,
-            { _, year, month, dayOfMonth ->
-                selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
-            },
-            selectedDate.year,
-            selectedDate.monthValue - 1,
-            selectedDate.dayOfMonth
-        )
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditing) "Editar Despesa" else "Nova Despesa") },
+                title = {
+                    Text(
+                        text = if (isEditing) {
+                            "Editar despesa"
+                        } else {
+                            "Nova despesa"
+                        }
+                    )
+                },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Voltar"
-                        )
+                    TextButton(onClick = onNavigateBack) {
+                        Text("Voltar")
                     }
                 }
             )
         }
-    ) { innerPadding ->
+    ) { contentPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(contentPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            if (isEditing && !initialized) {
+                if (editState.isLoading) {
+                    CircularProgressIndicator()
+                }
+
+                editState.error?.let { message ->
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
 
             OutlinedTextField(
                 value = description,
                 onValueChange = {
                     description = it
-                    descError = false
+                    descriptionError = false
                 },
                 label = { Text("Descrição") },
-                placeholder = { Text("Ex: Combustível SP→RJ") },
-                isError = descError,
+                singleLine = true,
+                enabled = canEdit,
+                isError = descriptionError,
                 supportingText = {
-                    if (descError) Text("Informe a descrição")
+                    if (descriptionError) {
+                        Text("Informe a descrição.")
+                    }
                 },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-
-            OutlinedTextField(
-                value = amountText,
-                onValueChange = { newValue ->
-                    amountText = MoneyInputUtils.sanitizeMoneyInput(newValue)
-                    amountError = false
-                },
-                label = { Text("Valor (R$)") },
-                placeholder = { Text("0,00") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                isError = amountError,
-                supportingText = {
-                    if (amountError) Text("Informe um valor válido")
-                },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-
-            DateField(
-                value = selectedDate.format(dateFormatter),
-                onClick = { datePickerDialog.show() },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
-                value = city,
-                onValueChange = { city = it },
+                value = amountText,
+                onValueChange = {
+                    amountText = MoneyInputUtils.sanitizeMoneyInput(it)
+                    amountError = false
+                },
+                label = { Text("Valor (R$)") },
+                placeholder = { Text("0,00") },
+                singleLine = true,
+                enabled = canEdit,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Decimal
+                ),
+                isError = amountError,
+                supportingText = {
+                    if (amountError) {
+                        Text("Informe um valor válido maior que zero.")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Column {
+                OutlinedButton(
+                    onClick = { categoryMenuExpanded = true },
+                    enabled = canEdit,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Categoria: ${selectedCategory.label}")
+                }
+
+                DropdownMenu(
+                    expanded = categoryMenuExpanded,
+                    onDismissRequest = {
+                        categoryMenuExpanded = false
+                    }
+                ) {
+                    ExpenseCategory.values().forEach { category ->
+                        DropdownMenuItem(
+                            text = { Text(category.label) },
+                            onClick = {
+                                categoryName = category.name
+                                categoryMenuExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            OutlinedButton(
+                onClick = {
+                    DatePickerDialog(
+                        context,
+                        { _, year, month, day ->
+                            selectedDateText = LocalDate.of(
+                                year,
+                                month + 1,
+                                day
+                            ).toString()
+                        },
+                        selectedDate.year,
+                        selectedDate.monthValue - 1,
+                        selectedDate.dayOfMonth
+                    ).show()
+                },
+                enabled = canEdit,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Data: ${selectedDate.format(dateFormatter)}")
+            }
+
+            OutlinedTextField(
+                value = cityText,
+                onValueChange = { cityText = it },
                 label = { Text("Cidade") },
-                placeholder = { Text("Ex: São Paulo") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                enabled = canEdit,
+                modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
-                label = { Text("Observações (opcional)") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 2,
-                maxLines = 4
+                label = { Text("Observações") },
+                minLines = 3,
+                enabled = canEdit,
+                modifier = Modifier.fillMaxWidth()
             )
 
-            Text(
-                text = "Categoria",
-                style = MaterialTheme.typography.titleSmall
-            )
-
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                ExpenseCategory.entries.forEach { cat ->
-                    FilterChip(
-                        selected = selectedCat == cat,
-                        onClick = { selectedCat = cat },
-                        label = { Text("${cat.emoji} ${cat.label}") }
-                    )
-                }
-            }
+            Spacer(modifier = Modifier.height(4.dp))
 
             Button(
+                enabled = canEdit,
                 onClick = {
-                    descError = description.isBlank()
+                    val amount = MoneyInputUtils.parseMoneyValue(amountText)
 
-                    val parsedAmount = MoneyInputUtils.parseMoneyValue(amountText)
-                    amountError = parsedAmount == null || parsedAmount <= 0
+                    descriptionError = description.isBlank()
+                    amountError = amount == null ||
+                            !amount.isFinite() ||
+                            amount <= 0.0
 
-                    if (descError || amountError) return@Button
+                    if (!descriptionError && !amountError && amount != null) {
+                        saveRequested = true
 
-                    val safeAmount = parsedAmount ?: return@Button
-
-                    viewModel.saveExpense(
-                        tourId = tourId,
-                        expenseId = expenseId ?: 0L,
-                        description = description.trim(),
-                        amount = safeAmount,
-                        date = selectedDate,
-                        category = selectedCat,
-                        notes = notes.trim(),
-                        city = city.trim()
-                    )
+                        viewModel.saveExpense(
+                            tourId = tourId,
+                            expenseId = expenseId,
+                            description = description.trim(),
+                            amount = amount,
+                            date = selectedDate,
+                            category = selectedCategory,
+                            notes = notes.trim(),
+                            city = cityText.trim()
+                        )
+                    }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (isEditing) "Salvar Alterações" else "Salvar Despesa")
+                Text(
+                    text = if (saveRequested) {
+                        "Salvando..."
+                    } else {
+                        "Salvar despesa"
+                    }
+                )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

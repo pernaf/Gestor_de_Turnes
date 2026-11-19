@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 interface ExpenseRepository {
     fun getExpensesByTour(tourId: Long): Flow<List<Expense>>
     fun getTotalExpenses(tourId: Long): Flow<Double>
+    fun getExpenseById(expenseId: Long): Flow<Expense?>
     suspend fun insertExpense(expense: Expense): Long
     suspend fun deleteExpense(expense: Expense)
     suspend fun deleteByTourAndCity(tourId: Long, cityName: String)

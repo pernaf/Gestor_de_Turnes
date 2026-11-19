@@ -30,6 +30,12 @@ class IncomeRepositoryImpl @Inject constructor(
         dao.deleteByTourAndCity(tourId, cityName)
     }
 
+    override fun getIncomeById(incomeId: Long): Flow<Income?> {
+        return dao.getIncomeById(incomeId).map { entity ->
+            entity?.toDomain()
+        }
+    }
+
     private fun IncomeEntity.toDomain() = Income(
         id = id,
         tourId = tourId,

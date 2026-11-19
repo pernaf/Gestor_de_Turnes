@@ -20,6 +20,9 @@ interface ExpenseDao {
     @Query("DELETE FROM expenses WHERE tourId = :tourId AND LOWER(city) = LOWER(:cityName)")
     suspend fun deleteByTourAndCity(tourId: Long, cityName: String)
 
+    @Query("SELECT * FROM expenses WHERE id = :expenseId")
+    fun getExpenseById(expenseId: Long): Flow<ExpenseEntity?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(expense: ExpenseEntity): Long
 

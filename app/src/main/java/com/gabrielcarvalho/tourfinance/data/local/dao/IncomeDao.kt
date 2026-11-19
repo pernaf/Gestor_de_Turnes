@@ -20,6 +20,9 @@ interface IncomeDao {
     @Query("DELETE FROM incomes WHERE tourId = :tourId AND LOWER(city) = LOWER(:cityName)")
     suspend fun deleteByTourAndCity(tourId: Long, cityName: String)
 
+    @Query("SELECT * FROM incomes WHERE id = :incomeId")
+    fun getIncomeById(incomeId: Long): Flow<IncomeEntity?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(income: IncomeEntity): Long
 
